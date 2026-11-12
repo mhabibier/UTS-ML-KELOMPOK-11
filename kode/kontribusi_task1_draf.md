@@ -1,7 +1,7 @@
 # Draf kontribusi Task 1
 
 Untuk ditinjau dan digabung ke kontribusi.md kelompok. Bukan pernyataan
-persetujuan anggota dan bukan bukti PR yang belum dibuat.
+persetujuan anggota; PR berikut masih menunggu review kelompok.
 
 - Akun GitHub: mhabibier.
 - Nama lengkap: Muhammad Habibie Rabbani.
@@ -10,7 +10,8 @@ persetujuan anggota dan bukan bukti PR yang belum dibuat.
 - Pekerjaan: audit data/risiko leakage, validasi waktu dan pembanding acak,
   baseline, LightGBM dan Ridge, sensitivitas outlier/kategori baru, kalibrasi,
   analisis error, PDP, prediksi test, reproduksi, dan draf laporan.
-- PR untuk pekerjaan analisis/model ini: belum dibuat; isi tautan setelah PR tersedia.
+- PR untuk pekerjaan analisis/model ini: https://github.com/telkom-ml-kelompok-11-2026/UTS-ML-KELOMPOK-11/pull/2
+- Commit implementasi: e67ff1d (Complete Task 1 regression notebook, evaluation, and predictions).
 - Review oleh anggota lain dan persetujuan isi: belum dilakukan/dikonfirmasi.
 
 ## Penggunaan AI
