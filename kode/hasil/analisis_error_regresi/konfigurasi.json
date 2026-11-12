@@ -1,0 +1,20 @@
+{
+  "python": "3.13.0",
+  "versi": {
+    "numpy": "2.5.4",
+    "pandas": "3.1.1",
+    "lightgbm": "4.7.0",
+    "matplotlib": "3.11.2"
+  },
+  "pembagian": {
+    "train": 178548,
+    "train_label_belum_tersedia": 2848,
+    "juli_total": 34436,
+    "kalibrasi_juli": 31280,
+    "juli_belum_tiba_sebelum_agustus": 3156,
+    "evaluasi_agustus": 34168
+  },
+  "koreksi_p90_jam": 4.592367200252866,
+  "metode": "Model dan koreksi identik dengan kalibrasi_regresi.py; tidak tuning dari hasil kelompok Agustus.",
+  "batasan": "Metrik deskriptif, bukan sebab-akibat atau uji signifikansi. Kelompok kecil lebih tidak stabil. Durasi ekstrem dipertahankan; ambang 720 jam hanya diagnostik. Dimensi dianalisis terpisah, bukan kombinasi layanan-pulau-kurir. Agustus sudah dilihat sebelumnya; evaluasi historis. Batasan kematangan label dan pemilihan hyperparameter dari tahap kalibrasi tetap berlaku. Tidak membuktikan alasan model; SHAP/PDP masih tahap berikutnya."
+}

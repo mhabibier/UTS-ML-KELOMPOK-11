@@ -1,0 +1,56 @@
+{
+  "python": "3.13.0",
+  "versi": {
+    "numpy": "2.5.4",
+    "pandas": "3.1.1",
+    "lightgbm": "4.7.0",
+    "matplotlib": "3.11.2"
+  },
+  "sample_size": 2000,
+  "seed": 42,
+  "referensi": "sampel train sebelum Juli",
+  "pembagian": {
+    "train": 178548,
+    "train_label_belum_tersedia": 2848,
+    "juli_total": 34436,
+    "kalibrasi_juli": 31280,
+    "juli_belum_tiba_sebelum_agustus": 3156,
+    "evaluasi_agustus": 34168
+  },
+  "fitur_terpilih": [
+    "kota_tujuan",
+    "layanan",
+    "jarak_km",
+    "f04",
+    "f17"
+  ],
+  "grid": {
+    "kota_tujuan": {
+      "jumlah_titik": 12,
+      "kategori": true
+    },
+    "layanan": {
+      "jumlah_titik": 4,
+      "kategori": true
+    },
+    "jarak_km": {
+      "jumlah_titik": 20,
+      "kategori": false
+    },
+    "f04": {
+      "jumlah_titik": 20,
+      "kategori": false
+    },
+    "f17": {
+      "jumlah_titik": 20,
+      "kategori": false
+    }
+  },
+  "koreksi_p90_jam": 4.592367200252866,
+  "metode": "Brute PDP atas pipeline kuantil setelah koreksi urutan dan kalibrasi.",
+  "pemilihan_fitur": "Lima gain tertinggi, rata-rata porsi gain masing-masing model P50/P90.",
+  "grid_numerik": "20 titik persentil 5-95 train; fitur diskrit kecil memakai semua nilai unik.",
+  "grid_kategori": "Maksimal 12 kategori teratas frekuensi train.",
+  "batasan": "PDP bukan kausal. Fitur berkorelasi dapat menghasilkan kombinasi hipotetis tidak realistis. Rata-rata menutupi variasi antar paket; bukan kuantil distribusi target gabungan. Gain bukan SHAP dan bukan ukuran akurasi atau bukti leakage. Fitur anonim tidak diberi makna bisnis rekaan. Tidak memakai target Agustus untuk memilih fitur, model, grid, atau koreksi. Tidak mengubah model atau menyelesaikan masalah coverage K07.",
+  "referensi_metode": "https://scikit-learn.org/stable/modules/partial_dependence.html"
+}

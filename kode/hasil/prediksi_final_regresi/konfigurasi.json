@@ -1,0 +1,52 @@
+{
+  "parameter": {
+    "n_estimators": 200,
+    "learning_rate": 0.05,
+    "reg_lambda": 1.0,
+    "objective": "quantile",
+    "random_state": 42,
+    "n_jobs": 4,
+    "deterministic": true,
+    "force_col_wise": true,
+    "verbosity": -1,
+    "num_leaves": 31,
+    "min_child_samples": 100
+  },
+  "pembagian": {
+    "validasi_mulai": "2025-08-01",
+    "validasi_selesai_eksklusif": "2025-09-01",
+    "train_sebelum_cek_label": 215832,
+    "train_label_belum_tersedia": 3343,
+    "train_dipakai": 212489,
+    "validasi": 34168,
+    "kalibrasi_agustus": 31568,
+    "agustus_belum_tiba_sebelum_september": 2600
+  },
+  "versi": {
+    "numpy": "2.5.4",
+    "pandas": "3.1.1",
+    "lightgbm": "4.7.0",
+    "scikit-learn": "1.9.1"
+  },
+  "koreksi_p90_jam": 0.21881571909854358,
+  "urutan_koreksi": 28413,
+  "baris_test": 60000,
+  "unknown_test_per_fitur": {
+    "layanan": 0,
+    "mitra_kurir": 2342,
+    "hub_asal": 0,
+    "kota_asal": 0,
+    "pulau_tujuan": 0,
+    "kota_tujuan": 0
+  },
+  "crossing_sebelum_koreksi": 14,
+  "sha256_input": {
+    "regresi_train.csv.gz": "63b6b0ff38c321bbf9ea44ae5610c4b8aa5a40d411e97703b9ce65afb08d916b",
+    "regresi_test.csv.gz": "434dbab6b1ef76cfdc99d0b9aa3503c4beedb2a9982702be57300d00b7ea02be"
+  },
+  "sha256_output": "80d217f7ad6dc1e1557c1aa4887f92ea808014eec19e7b3f4d347e7b5e7d3a44",
+  "fit": "Sebelum Agustus, label tersedia sebelum 1 Agustus.",
+  "kalibrasi": "Pickup Agustus, label tersedia sebelum 1 September.",
+  "prediksi": "Sep-Okt memakai model tetap; tidak refit setelah kalibrasi.",
+  "batasan": "Menyisihkan Agustus untuk kalibrasi sehingga tidak fit pada seluruh train. Ini pilihan untuk menjaga koreksi sesuai model, berbeda dari saran refit seluruh train pada panduan. Coverage test tidak diketahui karena label tersembunyi. Diagnostik Agustus bukan evaluasi independen. Asumsi waktu tiba, seleksi label dan drift tetap membatasi coverage. Evaluasi sebelumnya hanya horizon satu bulan; test dua bulan belum tervalidasi setara."
+}

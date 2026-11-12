@@ -228,3 +228,6 @@ regresi_test.csv*
 klasifikasi_train.csv*
 klasifikasi_test.csv*
 clustering.csv*
+
+# Cadangan lokal sebelum migrasi ke notebook; bukan sumber aktif
+kode/arsip_skrip_sebelum_notebook/

@@ -1,0 +1,13 @@
+{
+  "seed": 42,
+  "model": "kuantil layanan x pulau; fallback kuantil global train",
+  "paket": {
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "scikit-learn": "1.9.1"
+  },
+  "waktu": "Validasi Juni-Agustus; train sebelum cutoff dan label diperkirakan sudah tersedia.",
+  "acak": "3-fold KFold Januari-Agustus, tanpa cutoff atau penyaringan kematangan label.",
+  "batasan": "Periode evaluasi dan ukuran train berbeda. Selisih skor bukan efek murni pengacakan. Fold acak dapat memakai masa depan untuk memprediksi masa lalu dan bukan simulasi deployment.",
+  "status": "Eksplorasi baseline, belum model lanjutan atau evaluasi test."
+}

@@ -1,0 +1,157 @@
+{
+  "versi": {
+    "python": "3.13.0",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1"
+  },
+  "train": {
+    "baris": 250000,
+    "nilai_kosong": {
+      "berat_kg": 13897
+    },
+    "nilai_tak_hingga": {},
+    "pelanggaran_aturan": {
+      "berat_kg_nol_negatif": 0,
+      "jarak_km_negatif": 0,
+      "volume_liter_nol_negatif": 0,
+      "jumlah_item_bukan_bilangan_bulat_positif": 0,
+      "nilai_barang_negatif": 0,
+      "alamat_skor_di_luar_0_1": 0,
+      "indeks_kemacetan_di_luar_0_1": 0,
+      "jam_pickup_tidak_valid": 0,
+      "asuransi_bukan_0_1": 0,
+      "cod_bukan_0_1": 0,
+      "hujan_negatif": 0
+    },
+    "kategori": {
+      "layanan": {
+        "unik_asli": 4,
+        "unik_setelah_normalisasi": 4,
+        "baris_berubah_penulisan": 0
+      },
+      "mitra_kurir": {
+        "unik_asli": 12,
+        "unik_setelah_normalisasi": 12,
+        "baris_berubah_penulisan": 250000
+      },
+      "hub_asal": {
+        "unik_asli": 6,
+        "unik_setelah_normalisasi": 6,
+        "baris_berubah_penulisan": 250000
+      },
+      "kota_asal": {
+        "unik_asli": 30,
+        "unik_setelah_normalisasi": 30,
+        "baris_berubah_penulisan": 250000
+      },
+      "pulau_tujuan": {
+        "unik_asli": 7,
+        "unik_setelah_normalisasi": 7,
+        "baris_berubah_penulisan": 250000
+      },
+      "kota_tujuan": {
+        "unik_asli": 405,
+        "unik_setelah_normalisasi": 405,
+        "baris_berubah_penulisan": 250000
+      }
+    }
+  },
+  "test": {
+    "baris": 60000,
+    "nilai_kosong": {
+      "berat_kg": 3265
+    },
+    "nilai_tak_hingga": {},
+    "pelanggaran_aturan": {
+      "berat_kg_nol_negatif": 0,
+      "jarak_km_negatif": 0,
+      "volume_liter_nol_negatif": 0,
+      "jumlah_item_bukan_bilangan_bulat_positif": 0,
+      "nilai_barang_negatif": 0,
+      "alamat_skor_di_luar_0_1": 0,
+      "indeks_kemacetan_di_luar_0_1": 0,
+      "jam_pickup_tidak_valid": 0,
+      "asuransi_bukan_0_1": 0,
+      "cod_bukan_0_1": 0,
+      "hujan_negatif": 0
+    },
+    "kategori": {
+      "layanan": {
+        "unik_asli": 4,
+        "unik_setelah_normalisasi": 4,
+        "baris_berubah_penulisan": 0
+      },
+      "mitra_kurir": {
+        "unik_asli": 13,
+        "unik_setelah_normalisasi": 13,
+        "baris_berubah_penulisan": 60000
+      },
+      "hub_asal": {
+        "unik_asli": 6,
+        "unik_setelah_normalisasi": 6,
+        "baris_berubah_penulisan": 60000
+      },
+      "kota_asal": {
+        "unik_asli": 30,
+        "unik_setelah_normalisasi": 30,
+        "baris_berubah_penulisan": 60000
+      },
+      "pulau_tujuan": {
+        "unik_asli": 7,
+        "unik_setelah_normalisasi": 7,
+        "baris_berubah_penulisan": 60000
+      },
+      "kota_tujuan": {
+        "unik_asli": 405,
+        "unik_setelah_normalisasi": 405,
+        "baris_berubah_penulisan": 60000
+      }
+    }
+  },
+  "target": {
+    "kuantil": {
+      "0": 11.6,
+      "0.5": 61.7,
+      "0.9": 117.8,
+      "0.99": 224.70100000000093,
+      "0.999": 3054.017999999807,
+      "1": 25452.0
+    },
+    "jumlah_di_atas_jam": {
+      "168": 7480,
+      "720": 370,
+      "2160": 327
+    }
+  },
+  "konsistensi_snapshot": {
+    "asumsi_batas_eksklusif": "2025-09-01 00:00:00",
+    "perkiraan_tiba_setelah_snapshot": 2804
+  },
+  "kategori_test_baru_setelah_normalisasi": {
+    "layanan": {
+      "kategori_baru": 0,
+      "baris_test_terdampak": 0
+    },
+    "mitra_kurir": {
+      "kategori_baru": 1,
+      "baris_test_terdampak": 2342
+    },
+    "hub_asal": {
+      "kategori_baru": 0,
+      "baris_test_terdampak": 0
+    },
+    "kota_asal": {
+      "kategori_baru": 0,
+      "baris_test_terdampak": 0
+    },
+    "pulau_tujuan": {
+      "kategori_baru": 0,
+      "baris_test_terdampak": 0
+    },
+    "kota_tujuan": {
+      "kategori_baru": 0,
+      "baris_test_terdampak": 0
+    }
+  }
+}

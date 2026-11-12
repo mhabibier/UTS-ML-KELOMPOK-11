@@ -1,0 +1,12 @@
+{
+  "python": "3.13.0",
+  "paket": {
+    "numpy": "2.5.4",
+    "pandas": "3.1.1"
+  },
+  "acak": false,
+  "kuantil_interpolasi": "linear",
+  "label_train": "pickup + durasi < awal validasi",
+  "target_validasi": "semua label diberikan, termasuk ekstrem",
+  "status": "eksplorasi; belum kalibrasi atau prediksi test"
+}

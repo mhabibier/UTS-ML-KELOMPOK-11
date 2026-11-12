@@ -1,0 +1,7 @@
+bulan,kondisi,train,batas_p99_train_jam,target_train_dibatasi,kurir_disembunyikan,baris_train_dikeluarkan,kurir_baru_validasi,crossing_sebelum_koreksi
+05,asli,113592,211.80899999999966,0,k01|k10,0,0,40
+05,cap_p99,113592,211.80899999999966,1136,k01|k10,0,0,61
+05,kurir_baru,90835,211.80899999999966,0,k01|k10,22757,6649,161
+06,asli,146549,213.4,0,k01|k10,0,0,9
+06,cap_p99,146549,213.4,1463,k01|k10,0,0,19
+06,kurir_baru,117143,213.4,0,k01|k10,29406,6450,34
