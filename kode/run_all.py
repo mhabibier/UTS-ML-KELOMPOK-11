@@ -15,7 +15,7 @@ def main():
     args = parser.parse_args()
     if args.task != '1':
         parser.error('Task 2/3 belum diintegrasikan.')
-    path = repo / 'Task1_Regresi.ipynb'
+    path = repo / 'kode/Task1_Regresi.ipynb'
     notebook = json.loads(path.read_text(encoding='utf-8'))
     tags = {'setup', 'definitions'}
     if args.mode in ('full', 'tests'):

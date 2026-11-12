@@ -1,7 +1,7 @@
 # UTS-ML-KELOMPOK-11
 UTS Machine Learning Kelompok 11.
 
-Untuk Task 1, buka [Task1_Regresi.ipynb](Task1_Regresi.ipynb), pilih kernel
+Untuk Task 1, buka [Task1_Regresi.ipynb](kode/Task1_Regresi.ipynb), pilih kernel
 `.venv`, lalu klik **Run All**. Seluruh kode audit, pelatihan, kalibrasi,
 prediksi, dan tes berada di notebook tersebut.
 

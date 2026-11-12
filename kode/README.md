@@ -1,6 +1,6 @@
 # Task 1 — cara menjalankan
 
-Seluruh kode Task 1 berada dalam [Task1_Regresi.ipynb](../Task1_Regresi.ipynb).
+Seluruh kode Task 1 berada dalam [Task1_Regresi.ipynb](Task1_Regresi.ipynb).
 Notebook mandiri: tidak mengimpor atau menjalankan skrip proyek `.py`.
 
 `arsip_skrip_sebelum_notebook/` menyimpan 20 skrip asli sebagai cadangan migrasi.
@@ -31,7 +31,7 @@ Jika kernel di-restart, jalankan ulang cell definisi dari atas sebelum memakai f
 - `prediksi_regresi.csv`: hasil akhir test, 60.000 baris.
 - Catatan audit/interpretasi dan draf kontribusi: bahan penjelasan ujian dan laporan.
 
-Dataset disimpan di luar repository, default satu tingkat di atas notebook.
+Dataset disimpan di luar repository, default satu tingkat di atas root repository.
 Atur `DATA_DIR` pada cell pengaturan bila lokasinya berbeda. Jangan commit dataset.
 Google Colab cloud memerlukan upload dataset dan pemasangan library tersendiri;
 file D: laptop tidak tersedia otomatis di cloud. Lingkungan yang diuji adalah
