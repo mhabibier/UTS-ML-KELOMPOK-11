@@ -48,5 +48,5 @@
   "fit": "Sebelum Agustus, label tersedia sebelum 1 Agustus.",
   "kalibrasi": "Pickup Agustus, label tersedia sebelum 1 September.",
   "prediksi": "Sep-Okt memakai model tetap; tidak refit setelah kalibrasi.",
-  "batasan": "Menyisihkan Agustus untuk kalibrasi sehingga tidak fit pada seluruh train. Ini pilihan untuk menjaga koreksi sesuai model, berbeda dari saran refit seluruh train pada panduan. Coverage test tidak diketahui karena label tersembunyi. Diagnostik Agustus bukan evaluasi independen. Asumsi waktu tiba, seleksi label dan drift tetap membatasi coverage. Evaluasi sebelumnya hanya horizon satu bulan; test dua bulan belum tervalidasi setara."
+  "batasan": "Menyisihkan Agustus untuk kalibrasi sehingga tidak fit pada seluruh train. Ini pilihan untuk menjaga koreksi sesuai model, berbeda dari saran refit seluruh train pada panduan. Coverage test tidak diketahui karena label tersembunyi. Diagnostik Agustus bukan evaluasi independen. Asumsi waktu tiba, seleksi label dan drift tetap membatasi coverage. Diagnosis historis dua bulan Juli-Agustus tersedia, tetapi bersifat eksploratif dan tidak menjamin hasil test."
 }

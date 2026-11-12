@@ -36,3 +36,14 @@ ujian lisan. Tidak ada data eksternal yang ditambahkan ke fitur model.
   dan coverage rendah K07 dalam laporan.
 - Gabungkan Task 1–3 menjadi satu laporan.pdf (maksimal 18 halaman di luar
   lampiran), satu perintah kelompok, serta kontribusi.md yang disetujui anggota.
+
+## Penyempurnaan Task 1 — 12 November 2026
+
+Codex membantu memeriksa lokasi notebook dan peluncur, melengkapi diagnosis
+historis dua bulan dengan model tetap, memperjelas kamus fitur serta keterbatasan
+K07/kematangan label/kalibrasi dalam laporan, dan menjalankan reproduksi dari
+salinan sumber tanpa arsip atau hasil eksperimen lama. Dua tes tambahan memeriksa
+batas waktu dan bahwa model tidak dilatih ulang selama horizon dua bulan.
+Bukti eksekusi tersedia pada `hasil/reproduksi_task1/verifikasi_bersih.json`.
+Revisi ini belum dinyatakan disetujui anggota atau masuk PR; tinjau lalu catat
+commit/PR aktual setelah perubahan dikumpulkan melalui alur kelompok.

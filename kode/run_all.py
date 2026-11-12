@@ -24,7 +24,7 @@ def main():
         tags.add('report')
     if args.mode == 'full':
         tags.update(['stage', 'preview'])
-    scope = {'__name__': '__main__', 'PROJECT_DIR': repo, 'DATA_DIR': args.data_dir}
+    scope = {'__name__': '__main__', 'PROJECT_DIR': repo, 'DATA_DIR': args.data_dir.resolve(), 'RUN_MODE': args.mode}
     start = time.monotonic()
     manifest = {'status': 'berjalan', 'mode': args.mode,
                 'sumber': path.name, 'sha256_notebook': hashlib.sha256(path.read_bytes()).hexdigest()}
