@@ -1,0 +1,5 @@
+kolom,pemeriksaan,hasil
+umur_akun_hari,tanggal daftar tersirat sama dalam satu id_pengguna,1.0
+umur_merchant_hari,tanggal daftar tersirat sama dalam satu id_merchant,1.0
+refund_merchant_30h,nilai konstan sepanjang Jan-Agt dalam satu merchant (merchant >= 20 transaksi),0.0
+volume_merchant_30h,nilai konstan sepanjang Jan-Agt dalam satu merchant (merchant >= 20 transaksi),1.0
