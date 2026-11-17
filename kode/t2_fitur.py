@@ -30,11 +30,14 @@ KELOMPOK_FITUR = {
 }
 
 
-# Susunan yang dipakai mulai PR 4 (diputuskan 17 Nov 2026 dari t2_fitur_kombinasi_ringkas.csv):
-# 78 fitur dasar - umur_perangkat_hari + 14 kolom baru (termasuk umur_perangkat_hari_bersih) = 91 fitur. PR-AUC 0,740 vs dasar 0,709 (+0,031, naik di 20/20
-# pasangan lipatan x seed). merchant_terlihat TIDAK dipakai: nilainya terus membesar seiring waktu
-# sehingga keluar dari rentang data latih pada data baru (lipatan 4 turun saat diikutkan).
-KELOMPOK_TERPILIH = ["fraud_merchant", "fraud_pengguna", "riwayat_pengguna", "penanda"]
+# Susunan yang dipakai mulai PR 4 = hasil seleksi maju di bagian 11 task2_klasifikasi.py
+# (t2_fitur_seleksi.csv, 17 Nov 2026, LightGBM berregularisasi). Aturan yang ditetapkan sebelum melihat
+# hasil: kelompok dicoba berurutan dari selisih terbesar di bagian 10 dan diterima bila, dibanding susunan
+# yang sudah diterima, PR-AUC rata-rata naik DAN naik di >= 3 dari 4 lipatan.
+# 77 fitur dasar + 10 kolom baru = 87 fitur. PR-AUC 0,756 vs dasar 0,719 (+0,037, naik di 20/20 pasangan
+# lipatan x seed; lipatan 4: +0,043). Urutan daftar = urutan diterima (urutan kolom ikut menentukan hasil
+# acak LightGBM). Ditolak: fraud_pengguna (+0,0004, 2/4 lipatan) dan penanda (+0,0003, 2/4 lipatan).
+KELOMPOK_TERPILIH = ["merchant_terlihat", "fraud_merchant", "riwayat_pengguna"]
 
 
 def susun_fitur(dasar, kelompok):

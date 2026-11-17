@@ -22,17 +22,23 @@ KOLOM_BINER = [
     "flag_review_manual", TARGET,
 ]
 
-# Fitur bocor, dibuang dari semua model:
-# - flag_review_manual (PR 1): tinjauan manual terjadi SETELAH transaksi.
-# - umur_merchant_hari (PR 2): negatif di 955 transaksi (tingkat fraud 20%) karena tanggal daftar
-#   merchant tercatat setelah transaksi; sumbangannya ke PR-AUC hampir seluruhnya dari baris itu.
-FITUR_BOCOR = ["flag_review_manual", "umur_merchant_hari"]
+# Fitur yang dikecualikan secara konservatif dari semua model. Aturannya: kolom dikeluarkan bila
+# ketersediaannya SAAT transaksi tidak dapat dipastikan. Ini keputusan kehati-hatian, bukan bukti
+# mekanisme kebocoran (data tidak memuat waktu pencatatan kolom).
+# - flag_review_manual (PR 1): kamus hanya menyebut "pernah ditinjau"; waktu tinjauan tidak diketahui.
+#   Fraud 30,4% bila flag = 1 vs 0,13% bila flag = 0 -> diduga kuat dicatat setelah transaksi.
+# - umur_merchant_hari (PR 2): negatif di 955 transaksi (tingkat fraud 20%); umur negatif mustahil
+#   saat transaksi, jadi nilai di baris itu tidak konsisten dengan waktu transaksi. Mekanismenya
+#   tidak diketahui. Sumbangannya ke PR-AUC hampir seluruhnya berasal dari baris tersebut.
+# - volume_merchant_30h (PR 2, setelah review): bernama "30 hari terakhir" tetapi nilainya sama persis
+#   untuk tiap merchant sepanjang Jan-Okt (latih dan uji) -> tidak dihitung saat transaksi.
+FITUR_DIKECUALIKAN = ["flag_review_manual", "umur_merchant_hari", "volume_merchant_30h"]
 
-# Belum terbukti bocor; diuji ulang dengan beberapa seed di tahap validasi.
-# volume_merchant_30h: nilainya konstan per merchant (satu potret, bukan hitungan 30 hari terakhir).
-KOLOM_DIPANTAU = ["jumlah_akun_per_perangkat", "refund_merchant_30h", "volume_merchant_30h"]
+# Tidak ada tanda kebocoran dari data, tetapi kamus tidak menyebut titik waktunya;
+# diuji ulang dengan beberapa seed di tahap validasi.
+KOLOM_DIPANTAU = ["jumlah_akun_per_perangkat", "refund_merchant_30h"]
 
-# Label dari tanggal ini ke atas belum matang (lihat t2_fraud_per_minggu.png):
+# Asumsi konservatif: label dari tanggal ini ke atas berpotensi belum matang (lihat t2_fraud_per_minggu.png):
 # transaksi mulai 11 Agustus 2025 tidak dipakai untuk latih maupun validasi.
 BATAS_LABEL_MATANG = pd.Timestamp("2025-08-11")
 
@@ -53,7 +59,7 @@ def muat_data(nama_berkas):
 def bersihkan_kategori(df):
     """Menyeragamkan penulisan kolom kategori (strip + huruf kecil) dan mengubahnya ke tipe category.
 
-    Dilakukan sekali pada seluruh data supaya data latih dan validasi memakai daftar kategori yang sama.
+    Normalisasi teks tidak mempelajari label. Kamus kategori model tetap dibatasi pada train oleh matriks_lgbm.
     """
     df = df.copy()
     for kol in KOLOM_KATEGORI:
@@ -68,15 +74,15 @@ def data_matang(df, batas=BATAS_LABEL_MATANG):
 
 
 def fitur_model(df, buang=()):
-    """Daftar kolom fitur: semua kolom kecuali ID, waktu, label, fitur bocor, dan kolom di `buang`."""
-    dikecualikan = set(KOLOM_ID) | {"waktu", TARGET} | set(FITUR_BOCOR) | set(buang)
+    """Daftar kolom fitur: semua kolom kecuali ID, waktu, label, fitur dikecualikan, dan kolom di `buang`."""
+    dikecualikan = set(KOLOM_ID) | {"waktu", TARGET} | set(FITUR_DIKECUALIKAN) | set(buang)
     return [k for k in df.columns if k not in dikecualikan]
 
 
 def tambah_kolom(df, fitur, tambahan):
     """Daftar fitur + kolom `tambahan`, dengan urutan kolom tetap mengikuti urutan di df.
 
-    Dipakai untuk uji bukti kebocoran (sengaja memasukkan kembali kolom bocor). Urutan dijaga
+    Dipakai untuk mengukur sumbangan kolom yang dikecualikan (sengaja dimasukkan kembali). Urutan dijaga
     karena urutan kolom ikut menentukan hasil acak LightGBM (colsample_bytree).
     """
     pilih = set(fitur) | set(tambahan)
@@ -171,3 +177,16 @@ def ringkas_lipatan(df, lipatan):
             "valid_tingkat": valid.mean(),
         })
     return pd.DataFrame(baris)
+
+
+def matriks_lgbm(latih, valid, fitur):
+    """Kamus kategori hanya dari train; kategori baru pada validasi menjadi missing."""
+    x_train, x_valid = latih[fitur].copy(), valid[fitur].copy()
+    for kol in KOLOM_KATEGORI:
+        if kol in fitur:
+            a = latih[kol].astype('string').str.strip().str.lower()
+            b = valid[kol].astype('string').str.strip().str.lower()
+            kamus = sorted(a.dropna().unique().tolist())
+            x_train[kol] = pd.Categorical(a, categories=kamus)
+            x_valid[kol] = pd.Categorical(b.where(b.isin(kamus)), categories=kamus)
+    return x_train, x_valid

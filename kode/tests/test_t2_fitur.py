@@ -149,15 +149,15 @@ def test_fraud_historis_batas_jeda_tepat():
 
 
 def test_susunan_terpilih():
-    """Susunan final: 14 kolom baru (satu menggantikan umur_perangkat_hari), tanpa merchant_terlihat."""
+    """Susunan final (seleksi maju): 77 fitur dasar + 10 kolom baru = 87, tanpa fraud_pengguna dan penanda."""
+    assert KELOMPOK_TERPILIH == ["merchant_terlihat", "fraud_merchant", "riwayat_pengguna"]
     dasar = ["nominal", "umur_perangkat_hari", "trx_1j"]
     fitur = susun_fitur(dasar, KELOMPOK_TERPILIH)
-    assert "merchant_terlihat" not in KELOMPOK_TERPILIH
-    assert "umur_perangkat_hari" not in fitur and "umur_perangkat_hari_bersih" in fitur
-    assert len(fitur) == len(dasar) - 1 + sum(len(KELOMPOK_FITUR[g][0]) for g in KELOMPOK_TERPILIH)
+    assert fitur[:3] == dasar                     # tanpa penanda, tidak ada kolom dasar yang digantikan
+    assert len(fitur) == len(dasar) + sum(len(KELOMPOK_FITUR[g][0]) for g in KELOMPOK_TERPILIH)
     assert len(fitur) == len(set(fitur))
-    dasar_78 = [f"k{i}" for i in range(77)] + ["umur_perangkat_hari"]
-    assert len(susun_fitur(dasar_78, KELOMPOK_TERPILIH)) == 78 - 1 + 14 == 91
+    dasar_77 = [f"k{i}" for i in range(76)] + ["umur_perangkat_hari"]   # 77 fitur dasar setelah review
+    assert len(susun_fitur(dasar_77, KELOMPOK_TERPILIH)) == 77 + 10 == 87
 
 
 def test_penanda(df_tiruan):
