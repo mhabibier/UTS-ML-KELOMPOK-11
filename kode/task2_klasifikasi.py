@@ -40,7 +40,7 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from t2_data import (BATAS_LABEL_MATANG, FITUR_BOCOR, HASIL_DIR, KOLOM_BINER,
                      KOLOM_DIPANTAU, KOLOM_ID, KOLOM_KATEGORI, SEED, TARGET,
                      bersihkan_kategori, buat_lipatan_waktu, data_matang,
-                     fitur_model, muat_data, ringkas_lipatan, tambah_kolom)
+                     fitur_model, muat_data, ringkas_lipatan, tambah_kolom, matriks_lgbm)
 
 # Banyaknya seed untuk mengukur derau satu kali latih: SEED, SEED+1, ..., SEED+4
 N_SEED_ULANG = 5
@@ -165,7 +165,7 @@ def uji_titik_waktu(df):
     Logikanya: bila `umur_akun_hari` dihitung saat transaksi, maka
     tanggal transaksi - umur = tanggal daftar akun, dan nilainya harus sama untuk semua transaksi
     milik pengguna yang sama. Hal yang sama berlaku untuk merchant. Umur negatif mustahil terjadi
-    saat transaksi: artinya tanggal daftar dicatat SETELAH transaksi (informasi dari masa depan).
+    saat transaksi: tanggal tersirat berada setelah transaksi. Ini anomali kualitas/indikasi leakage, bukan bukti mekanisme pencatatan.
     """
     print("\n=== 1c. APAKAH KOLOM PROFIL DIHITUNG SAAT TRANSAKSI? ===")
     hari = (df["waktu"].dt.normalize() - df["waktu"].min().normalize()).dt.days
@@ -188,7 +188,7 @@ def uji_titik_waktu(df):
     print(tabel.to_string(index=False, float_format=FMT))
     tabel.to_csv(HASIL_DIR / "t2_audit_titik_waktu.csv", index=False)
     print("Catatan: kolom 'per 30 hari' seharusnya berubah dari waktu ke waktu; nilai yang konstan\n"
-          "berarti diambil dari satu potret (snapshot), bukan dihitung saat transaksi.")
+          "menimbulkan dugaan snapshot; pola konstan saja tidak membuktikan waktu pencatatan.")
 
     if "umur_merchant_hari" in df:
         neg = df["umur_merchant_hari"] < 0
@@ -273,13 +273,15 @@ def fraud_per_minggu(df):
 # --------------------------------------------------------------------------
 def latih_lgbm(latih, fitur, seed=SEED):
     model = lgb.LGBMClassifier(random_state=seed, **PARAM_LGBM)
-    model.fit(latih[fitur], latih[TARGET])
+    x_train, _ = matriks_lgbm(latih, latih.iloc[:0], fitur)
+    model.fit(x_train, latih[TARGET])
     return model
 
 
 def prob_lgbm(latih, valid, fitur, seed=SEED):
     """Melatih LightGBM pada `latih` lalu mengembalikan probabilitas fraud untuk `valid`."""
-    return latih_lgbm(latih, fitur, seed).predict_proba(valid[fitur])[:, 1]
+    _, x_valid = matriks_lgbm(latih, valid, fitur)
+    return latih_lgbm(latih, fitur, seed).predict_proba(x_valid)[:, 1]
 
 
 def prob_logistik(latih, valid, fitur):
@@ -407,7 +409,7 @@ def gambar_lipatan(dm, lipatan):
 def validasi(df_bersih):
     print("\n=== 4. LIPATAN VALIDASI BERBASIS WAKTU ===")
     dm = data_matang(df_bersih)
-    print(f"Data matang (sebelum {BATAS_LABEL_MATANG.date()}): {len(dm):,} baris, "
+    print(f"Data diasumsikan matang (sebelum {BATAS_LABEL_MATANG.date()}): {len(dm):,} baris, "
           f"{int(dm[TARGET].sum()):,} fraud ({dm[TARGET].mean():.4%})")
     lipatan = buat_lipatan_waktu(dm)
     ringkas = ringkas_lipatan(dm, lipatan)
@@ -467,7 +469,7 @@ def validasi(df_bersih):
     rb = banding.groupby("cara", sort=False)[["pr_auc", "roc_auc"]].agg(["mean", "std"])
     print(rb.to_string(float_format=FMT))
     print("\nValidasi acak mencampur transaksi masa depan ke data latih dan mengabaikan jeda label,\n"
-          "jadi angkanya cenderung lebih optimistis daripada kinerja saat model benar-benar dipakai.")
+          "ukuran train dan periode evaluasi juga berbeda; selisih skor bukan efek murni pengacakan.")
 
     # ---- 7. PR-AUC per minggu setelah jeda ----
     print("\n=== 7. PR-AUC LightGBM PER MINGGU SETELAH JEDA ===")
