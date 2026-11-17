@@ -220,9 +220,10 @@ __marimo__/
 .streamlit/secrets.toml
 
 # Dataset mentah UTS ML (jangan di-commit)
-data/
+/data/
 data_uts_ml/
 data_uts_ml.zip
+*.csv.gz
 regresi_train.csv*
 regresi_test.csv*
 klasifikasi_train.csv*
