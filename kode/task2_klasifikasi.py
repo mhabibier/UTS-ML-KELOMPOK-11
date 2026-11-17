@@ -8,10 +8,14 @@ Tahap audit (PR 1):
 Tahap validasi (PR 2):
   4. lipatan validasi berbasis waktu (latih | jeda 3 minggu | validasi 4 minggu),
   5. model dasar (tanpa kemampuan, regresi logistik, LightGBM),
-  6. pembanding: validasi acak vs validasi berbasis waktu,
+  6. pembanding: validasi acak vs validasi berbasis waktu (termasuk versi setara: data validasi
+     dan ukuran data latih sama, hanya asal data latih yang berbeda),
   7. PR-AUC per minggu setelah jeda,
-  8. uji ulang kolom "dipantau" dengan beberapa seed,
-  9. bukti kebocoran umur_merchant_hari (sengaja dimasukkan kembali untuk diukur).
+  8. uji ulang kolom "dipantau" dan volume_merchant_30h dengan beberapa seed,
+  9. sumbangan umur_merchant_hari (sengaja dimasukkan kembali untuk diukur).
+
+Catatan asumsi: batas label 11 Agustus 2025 dan jeda 21 hari adalah asumsi dari pola tingkat fraud
+mingguan (data tidak memuat tanggal konfirmasi fraud). Kolom dikecualikan atas dasar kehati-hatian.
 
 Cara menjalankan dari akar repo:
     python kode/task2_klasifikasi.py                    # semua tahap
@@ -37,7 +41,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-from t2_data import (BATAS_LABEL_MATANG, FITUR_BOCOR, HASIL_DIR, KOLOM_BINER,
+from t2_data import (BATAS_LABEL_MATANG, FITUR_DIKECUALIKAN, HASIL_DIR, KOLOM_BINER,
                      KOLOM_DIPANTAU, KOLOM_ID, KOLOM_KATEGORI, SEED, TARGET,
                      bersihkan_kategori, buat_lipatan_waktu, data_matang,
                      fitur_model, muat_data, ringkas_lipatan, tambah_kolom, matriks_lgbm)
@@ -360,8 +364,9 @@ def uji_kebocoran(df, df_bersih):
     tabel["pr_auc_tanpa_kemampuan"] = np.mean([dm.loc[lp.idx_valid, TARGET].mean() for lp in lipatan])
     tabel.to_csv(HASIL_DIR / "t2_dampak_kebocoran.csv", index=False)
     print(tabel.to_string(index=False, float_format=FMT))
-    print("\nBaca hasilnya: bila membuang satu kolom menurunkan PR-AUC sangat tajam, "
-          "kolom itu patut dicurigai sebagai fitur bocor. Periksa juga maknanya di kamus data.")
+    print("\nBaca hasilnya: penurunan tajam saat sebuah kolom dibuang berarti model sangat bergantung pada\n"
+          "kolom itu. Ini menimbulkan dugaan kebocoran, tetapi tidak membuktikan kapan kolom dicatat;\n"
+          "keputusan membuang diambil dari makna kolom di kamus data (kehati-hatian).")
 
 
 # --------------------------------------------------------------------------
@@ -418,7 +423,7 @@ def validasi(df_bersih):
     gambar_lipatan(dm, lipatan)
 
     fitur = fitur_model(dm)
-    print(f"Jumlah fitur: {len(fitur)} (tanpa ID, waktu, label, dan {', '.join(FITUR_BOCOR)})")
+    print(f"Jumlah fitur: {len(fitur)} (tanpa ID, waktu, label, dan {', '.join(FITUR_DIKECUALIKAN)})")
 
     # Simpanan prediksi LightGBM supaya model yang sama tidak dilatih dua kali:
     # kunci (nomor lipatan, seed, daftar fitur)
@@ -455,21 +460,44 @@ def validasi(df_bersih):
     print(ringkas_model.to_string(float_format=FMT))
 
     # ---- 6. Validasi acak vs validasi berbasis waktu ----
-    print("\n=== 6. VALIDASI ACAK vs VALIDASI BERBASIS WAKTU (LightGBM, fitur sama) ===")
+    # (a) Acak biasa: 5 lipatan bertingkat pada seluruh data. Ukuran data latih DAN periode yang
+    #     dinilai berbeda dengan validasi berbasis waktu, jadi selisihnya bukan efek murni pengacakan.
+    # (b) Acak setara: untuk setiap lipatan waktu, data validasi SAMA dan ukuran data latih SAMA;
+    #     bedanya hanya data latih diambil acak dari seluruh periode (boleh sesudah validasi dan dari
+    #     masa jeda), bukan dari masa lalu saja. Selisih (b) - waktu = manfaat "melihat masa depan".
+    seeds = [SEED + k for k in range(N_SEED_ULANG)]
+    print(f"\n=== 6. VALIDASI ACAK vs VALIDASI BERBASIS WAKTU (LightGBM, fitur sama) ===")
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=SEED)
-    acak = []
+    baris = []
     for i, (il, iv) in enumerate(skf.split(dm, dm[TARGET]), start=1):
         latih, valid = dm.iloc[il], dm.iloc[iv]
-        acak.append({"cara": "acak (5 lipatan bertingkat)", "lipatan": i,
-                     **metrik(valid[TARGET], prob_lgbm(latih, valid, fitur))})
-    waktu_ = [{"cara": "berbasis waktu (4 lipatan, jeda 3 minggu)", "lipatan": lp.nomor,
-               **metrik(dm.loc[lp.idx_valid, TARGET], prob_lgbm_cache(lp, SEED))} for lp in lipatan]
-    banding = pd.DataFrame(acak + waktu_)
+        baris.append({"cara": "acak biasa (5 lipatan bertingkat)", "lipatan": i, "seed": SEED,
+                      **metrik(valid[TARGET], prob_lgbm(latih, valid, fitur))})
+    for lp in lipatan:
+        valid = dm.loc[lp.idx_valid]
+        calon = dm.index.difference(lp.idx_valid).to_numpy()
+        for s in seeds:
+            rng = np.random.default_rng(1000 * s + lp.nomor)
+            idx_acak = np.sort(rng.choice(calon, size=len(lp.idx_latih), replace=False))
+            baris.append({"cara": "acak setara (validasi & ukuran latih sama)", "lipatan": lp.nomor,
+                          "seed": s, **metrik(valid[TARGET], prob_lgbm(dm.loc[idx_acak], valid, fitur, s))})
+            baris.append({"cara": "berbasis waktu (masa lalu, jeda 3 minggu)", "lipatan": lp.nomor,
+                          "seed": s, **metrik(valid[TARGET], prob_lgbm_cache(lp, s))})
+        print(f"  lipatan {lp.nomor} selesai")
+    banding = pd.DataFrame(baris)
     banding.to_csv(HASIL_DIR / "t2_validasi_acak_vs_waktu.csv", index=False)
     rb = banding.groupby("cara", sort=False)[["pr_auc", "roc_auc"]].agg(["mean", "std"])
     print(rb.to_string(float_format=FMT))
-    print("\nValidasi acak mencampur transaksi masa depan ke data latih dan mengabaikan jeda label,\n"
-          "ukuran train dan periode evaluasi juga berbeda; selisih skor bukan efek murni pengacakan.")
+    setara = banding[banding["cara"] != "acak biasa (5 lipatan bertingkat)"]
+    per_lip = setara.pivot_table(index="lipatan", columns="cara", values="pr_auc", aggfunc="mean")
+    per_lip["selisih_setara_minus_waktu"] = (per_lip["acak setara (validasi & ukuran latih sama)"]
+                                             - per_lip["berbasis waktu (masa lalu, jeda 3 minggu)"])
+    per_lip.to_csv(HASIL_DIR / "t2_validasi_acak_setara_per_lipatan.csv")
+    print("\nPer lipatan (rata-rata seed), data validasi sama:")
+    print(per_lip.to_string(float_format=FMT))
+    print("\nBaca hasilnya: acak biasa merata-ratakan semua bulan sehingga menyembunyikan penurunan di\n"
+          "periode terbaru; acak setara mengukur berapa banyak 'melihat masa depan' membantu bila\n"
+          "data validasi dan ukuran data latih disamakan.")
 
     # ---- 7. PR-AUC per minggu setelah jeda ----
     print("\n=== 7. PR-AUC LightGBM PER MINGGU SETELAH JEDA ===")
@@ -491,28 +519,35 @@ def validasi(df_bersih):
     print(rata.to_string(float_format=FMT))
     print("Catatan: tiap sel hanya berisi sekitar 70-90 fraud, jadi selisih antarminggu sangat berderau.")
 
-    # ---- 8. Uji ulang kolom dipantau dengan beberapa seed ----
+    # ---- 8. Uji ulang kolom dipantau (dan volume_merchant_30h) dengan beberapa seed ----
+    # Untuk tiap kolom: model DENGAN kolom vs model TANPA kolom pada lipatan dan seed yang sama.
+    # Kolom dipantau ada di model dasar (diukur dengan membuangnya); volume_merchant_30h sudah
+    # dikecualikan (diukur dengan memasukkannya kembali).
+    kolom_uji = KOLOM_DIPANTAU + [k for k in ["volume_merchant_30h"] if k in dm.columns]
     print(f"\n=== 8. UJI ULANG KOLOM DIPANTAU ({len(lipatan)} lipatan x {N_SEED_ULANG} seed) ===")
     seeds = [SEED + k for k in range(N_SEED_ULANG)]
     baris = []
     for lp in lipatan:
         y = dm.loc[lp.idx_valid, TARGET]
         for s in seeds:
-            dasar = average_precision_score(y, prob_lgbm_cache(lp, s))
-            for kol in KOLOM_DIPANTAU:
-                buang = average_precision_score(
-                    y, prob_lgbm_cache(lp, s, [k for k in fitur if k != kol]))
-                baris.append({"kolom_dibuang": kol, "lipatan": lp.nomor, "seed": s,
-                              "pr_auc_dasar": dasar, "pr_auc_dibuang": buang,
-                              "selisih": buang - dasar})
+            for kol in kolom_uji:
+                dengan = tambah_kolom(dm, fitur, [kol])
+                tanpa = [k for k in dengan if k != kol]
+                p_dengan = average_precision_score(y, prob_lgbm_cache(lp, s, dengan))
+                p_tanpa = average_precision_score(y, prob_lgbm_cache(lp, s, tanpa))
+                baris.append({"kolom_dibuang": kol, "status": "dipantau" if kol in fitur else "dikecualikan",
+                              "lipatan": lp.nomor, "seed": s,
+                              "pr_auc_dasar": p_dengan, "pr_auc_dibuang": p_tanpa,
+                              "selisih": p_tanpa - p_dengan})
         print(f"  lipatan {lp.nomor} selesai")
     ulang = pd.DataFrame(baris)
     ulang.to_csv(HASIL_DIR / "t2_validasi_kolom_dipantau.csv", index=False)
 
     # Derau seed: simpangan baku PR-AUC model dasar antar-seed dalam lipatan yang sama
-    derau_seed = (ulang.drop_duplicates(["lipatan", "seed"])
+    derau_seed = (ulang[ulang["status"] == "dipantau"].drop_duplicates(["lipatan", "seed"])
                   .groupby("lipatan")["pr_auc_dasar"].std().mean())
     ringkas_ulang = ulang.groupby("kolom_dibuang").agg(
+        status=("status", "first"),
         selisih_rata2=("selisih", "mean"),
         selisih_sb=("selisih", "std"),
         n_pasangan=("selisih", "size"),
@@ -528,18 +563,18 @@ def validasi(df_bersih):
     ringkas_ulang.to_csv(HASIL_DIR / "t2_validasi_kolom_dipantau_ringkas.csv")
     print(ringkas_ulang.to_string(float_format=FMT))
     print("\nBaca hasilnya: selisih = PR-AUC tanpa kolom - PR-AUC dengan kolom.\n"
-          "Kolom bocor biasanya menunjukkan penurunan besar dan konsisten di semua lipatan\n"
-          "(bandingkan dengan flag_review_manual). Selisih kecil yang arahnya berganti-ganti\n"
-          "antarlipatan berarti kolom itu tidak terbukti bocor dari data;\n"
-          "keputusan akhirnya juga harus memeriksa makna kolom di kamus data.")
+          "Penurunan besar dan konsisten di semua lipatan (seperti flag_review_manual) menimbulkan\n"
+          "dugaan kebocoran. Selisih kecil yang arahnya berganti-ganti tidak menunjukkan tanda itu.\n"
+          "Data saja tidak bisa memastikan waktu pencatatan; keputusan juga memakai makna kolom di kamus.\n"
+          "volume_merchant_30h tetap dikecualikan walau selisihnya kecil: nilainya konstan per merchant.")
 
-    # ---- 9. Bukti kebocoran umur_merchant_hari ----
-    # Kolom ini sudah dibuang dari model (FITUR_BOCOR). Di sini SENGAJA dimasukkan kembali untuk
+    # ---- 9. Sumbangan umur_merchant_hari ----
+    # Kolom ini sudah dikecualikan dari model. Di sini SENGAJA dimasukkan kembali untuk
     # mengukur sumbangannya. Prediksi yang sama (tanpa melatih ulang) dinilai dua kali: pada semua
     # baris validasi dan pada baris yang umurnya tidak negatif. Bila keunggulannya hilang setelah
     # baris negatif disisihkan, sumbangan kolom ini berasal dari baris yang mustahil (umur < 0).
     if "umur_merchant_hari" in dm.columns:
-        print(f"\n=== 9. BUKTI KEBOCORAN umur_merchant_hari ({len(lipatan)} lipatan x {len(seeds)} seed) ===")
+        print(f"\n=== 9. SUMBANGAN umur_merchant_hari ({len(lipatan)} lipatan x {len(seeds)} seed) ===")
         fitur_dengan = tambah_kolom(dm, fitur, ["umur_merchant_hari"])
         baris = []
         for lp in lipatan:

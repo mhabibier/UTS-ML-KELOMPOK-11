@@ -1,10 +1,46 @@
-cara,lipatan,pr_auc,roc_auc
-acak (5 lipatan bertingkat),1,0.7233096988392972,0.981121010343725
-acak (5 lipatan bertingkat),2,0.7289538990335857,0.9829294954332128
-acak (5 lipatan bertingkat),3,0.7055659540833958,0.9797701009598607
-acak (5 lipatan bertingkat),4,0.7786009976886332,0.9855983451786576
-acak (5 lipatan bertingkat),5,0.7691334907912792,0.9849755327986339
-"berbasis waktu (4 lipatan, jeda 3 minggu)",1,0.7562706943767096,0.9783440795671535
-"berbasis waktu (4 lipatan, jeda 3 minggu)",2,0.7505512375485347,0.9856514630146302
-"berbasis waktu (4 lipatan, jeda 3 minggu)",3,0.7316719065095756,0.9812661290302255
-"berbasis waktu (4 lipatan, jeda 3 minggu)",4,0.5857782750640828,0.9594215282894242
+cara,lipatan,seed,pr_auc,roc_auc
+acak biasa (5 lipatan bertingkat),1,42,0.7257811340455912,0.9785063525683625
+acak biasa (5 lipatan bertingkat),2,42,0.7372448044528663,0.9788656820903691
+acak biasa (5 lipatan bertingkat),3,42,0.7092115910762287,0.9727077216782571
+acak biasa (5 lipatan bertingkat),4,42,0.7655244898108389,0.9833699429030115
+acak biasa (5 lipatan bertingkat),5,42,0.7436864247200763,0.9816311051915271
+acak setara (validasi & ukuran latih sama),1,42,0.7594715259520891,0.9749441192590584
+"berbasis waktu (masa lalu, jeda 3 minggu)",1,42,0.7299118576288555,0.9747357245674363
+acak setara (validasi & ukuran latih sama),1,43,0.7441310152670344,0.9747824747073819
+"berbasis waktu (masa lalu, jeda 3 minggu)",1,43,0.7592114649735704,0.9787066217215169
+acak setara (validasi & ukuran latih sama),1,44,0.74851408531326,0.9721261280985528
+"berbasis waktu (masa lalu, jeda 3 minggu)",1,44,0.7559524775405198,0.9775296397106294
+acak setara (validasi & ukuran latih sama),1,45,0.7303339000817464,0.9734362901039402
+"berbasis waktu (masa lalu, jeda 3 minggu)",1,45,0.7514767645321596,0.976725439780456
+acak setara (validasi & ukuran latih sama),1,46,0.7373032625411505,0.9760814825072801
+"berbasis waktu (masa lalu, jeda 3 minggu)",1,46,0.7616443909862094,0.9776504464607889
+acak setara (validasi & ukuran latih sama),2,42,0.7329168387615622,0.9820444763667987
+"berbasis waktu (masa lalu, jeda 3 minggu)",2,42,0.752630478572369,0.9794031425532713
+acak setara (validasi & ukuran latih sama),2,43,0.7404104051842322,0.97849622808011
+"berbasis waktu (masa lalu, jeda 3 minggu)",2,43,0.7527621233617083,0.9806437811724555
+acak setara (validasi & ukuran latih sama),2,44,0.7486770251768431,0.9775168186779545
+"berbasis waktu (masa lalu, jeda 3 minggu)",2,44,0.7458022069081888,0.9821215568184101
+acak setara (validasi & ukuran latih sama),2,45,0.7393846981878924,0.9805102915140465
+"berbasis waktu (masa lalu, jeda 3 minggu)",2,45,0.7465758205317984,0.9836539948054035
+acak setara (validasi & ukuran latih sama),2,46,0.7416035027640535,0.982165810750969
+"berbasis waktu (masa lalu, jeda 3 minggu)",2,46,0.7480234998722519,0.9804786295721665
+acak setara (validasi & ukuran latih sama),3,42,0.7201140020190292,0.974676272610257
+"berbasis waktu (masa lalu, jeda 3 minggu)",3,42,0.7221499018013674,0.9775786474134448
+acak setara (validasi & ukuran latih sama),3,43,0.7371226663161016,0.9791292018652021
+"berbasis waktu (masa lalu, jeda 3 minggu)",3,43,0.7227115382489373,0.9791376452290079
+acak setara (validasi & ukuran latih sama),3,44,0.7224422196984336,0.9753459447783843
+"berbasis waktu (masa lalu, jeda 3 minggu)",3,44,0.716527108921985,0.9775731655279888
+acak setara (validasi & ukuran latih sama),3,45,0.7183915952799931,0.9754133656684763
+"berbasis waktu (masa lalu, jeda 3 minggu)",3,45,0.7283374558085888,0.9776043555659284
+acak setara (validasi & ukuran latih sama),3,46,0.7206270282297383,0.978616425039438
+"berbasis waktu (masa lalu, jeda 3 minggu)",3,46,0.7298734690512796,0.9781406981981358
+acak setara (validasi & ukuran latih sama),4,42,0.583472257831402,0.9458472669387225
+"berbasis waktu (masa lalu, jeda 3 minggu)",4,42,0.5678045872945965,0.9460353145406284
+acak setara (validasi & ukuran latih sama),4,43,0.5945392350540275,0.9471118747960423
+"berbasis waktu (masa lalu, jeda 3 minggu)",4,43,0.5668994894009523,0.9410733950561212
+acak setara (validasi & ukuran latih sama),4,44,0.5875499519717213,0.9447226960208762
+"berbasis waktu (masa lalu, jeda 3 minggu)",4,44,0.5745924898945461,0.9402041567561444
+acak setara (validasi & ukuran latih sama),4,45,0.5937889606428141,0.9512051867775971
+"berbasis waktu (masa lalu, jeda 3 minggu)",4,45,0.584024074207964,0.948992631169335
+acak setara (validasi & ukuran latih sama),4,46,0.5815126846057909,0.9330474140686239
+"berbasis waktu (masa lalu, jeda 3 minggu)",4,46,0.5807359020899013,0.93055660688393

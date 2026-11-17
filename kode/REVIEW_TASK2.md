@@ -1,6 +1,5 @@
 # Review audit dan validasi awal Task 2
 
-Ketentuan: UTS Machine Learning (fraud), bukan Deep Learning (RUL).
 Basis: PR #5 a0cb053, yang mencakup riwayat PR #4 a9e85a0.
 
 Perbaikan: kamus kategori LightGBM kini hanya dipelajari pada train tiap fold;
@@ -34,3 +33,15 @@ Task 2 final hanya karena audit dan baseline berhasil.
 Perbaikan ini tidak mengubah kepemilikan kontribusi asli. Muhammad Habibie Rabbani
 melakukan review dan koreksi dengan bantuan Codex; pekerjaan dasar milik penulis
 PR #4/#5. Tidak ada dataset mentah disertakan.
+
+## Tindak lanjut oleh penulis PR #5
+
+- Seluruh eksperimen multi-seed diulang dengan kode perbaikan kamus kategori (sebelum perubahan
+  berikut): kesembilan tabel `t2_validasi_*.csv` identik dengan versi a0cb053 (selisih 0), karena
+  semua kategori validasi dan uji sudah muncul di data latih lipatan pertama.
+- `volume_merchant_30h` kini dikecualikan secara konservatif (nilai konstan per merchant
+  sepanjang Jan-Okt). Konstanta `FITUR_BOCOR` diganti `FITUR_DIKECUALIKAN`.
+- Bagian 6 ditambah perbandingan acak setara: data validasi dan ukuran data latih sama, hanya asal
+  data latih yang berbeda (masa lalu vs acak dari seluruh periode).
+- Semua tabel di `kode/hasil/` dibuat ulang dari kode terbaru. `t2_review_verification.json`
+  adalah catatan verifikasi reviewer pada kode sebelum perubahan di atas.

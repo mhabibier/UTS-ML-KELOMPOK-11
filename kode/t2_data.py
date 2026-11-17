@@ -22,15 +22,21 @@ KOLOM_BINER = [
     "flag_review_manual", TARGET,
 ]
 
-# Fitur berisiko, dikecualikan konservatif dari model utama (bukan bukti mekanisme leakage):
-# - flag_review_manual (PR 1): waktu tinjauan tidak dijelaskan; ketersediaan sebelum transaksi belum pasti.
-# - umur_merchant_hari (PR 2): negatif di 955 transaksi (tingkat fraud 20%) karena tanggal daftar
-#   merchant tercatat setelah transaksi; sumbangannya ke PR-AUC hampir seluruhnya dari baris itu.
-FITUR_BOCOR = ["flag_review_manual", "umur_merchant_hari"]
+# Fitur yang dikecualikan secara konservatif dari semua model. Aturannya: kolom dikeluarkan bila
+# ketersediaannya SAAT transaksi tidak dapat dipastikan. Ini keputusan kehati-hatian, bukan bukti
+# mekanisme kebocoran (data tidak memuat waktu pencatatan kolom).
+# - flag_review_manual (PR 1): kamus hanya menyebut "pernah ditinjau"; waktu tinjauan tidak diketahui.
+#   Fraud 30,4% bila flag = 1 vs 0,13% bila flag = 0 -> diduga kuat dicatat setelah transaksi.
+# - umur_merchant_hari (PR 2): negatif di 955 transaksi (tingkat fraud 20%); umur negatif mustahil
+#   saat transaksi, jadi nilai di baris itu tidak konsisten dengan waktu transaksi. Mekanismenya
+#   tidak diketahui. Sumbangannya ke PR-AUC hampir seluruhnya berasal dari baris tersebut.
+# - volume_merchant_30h (PR 2, setelah review): bernama "30 hari terakhir" tetapi nilainya sama persis
+#   untuk tiap merchant sepanjang Jan-Okt (latih dan uji) -> tidak dihitung saat transaksi.
+FITUR_DIKECUALIKAN = ["flag_review_manual", "umur_merchant_hari", "volume_merchant_30h"]
 
-# Belum terbukti bocor; diuji ulang dengan beberapa seed di tahap validasi.
-# volume_merchant_30h: nilainya konstan per merchant (dugaan potret; waktu pencatatan belum terverifikasi).
-KOLOM_DIPANTAU = ["jumlah_akun_per_perangkat", "refund_merchant_30h", "volume_merchant_30h"]
+# Tidak ada tanda kebocoran dari data, tetapi kamus tidak menyebut titik waktunya;
+# diuji ulang dengan beberapa seed di tahap validasi.
+KOLOM_DIPANTAU = ["jumlah_akun_per_perangkat", "refund_merchant_30h"]
 
 # Asumsi konservatif: label dari tanggal ini ke atas berpotensi belum matang (lihat t2_fraud_per_minggu.png):
 # transaksi mulai 11 Agustus 2025 tidak dipakai untuk latih maupun validasi.
@@ -68,15 +74,15 @@ def data_matang(df, batas=BATAS_LABEL_MATANG):
 
 
 def fitur_model(df, buang=()):
-    """Daftar kolom fitur: semua kolom kecuali ID, waktu, label, fitur bocor, dan kolom di `buang`."""
-    dikecualikan = set(KOLOM_ID) | {"waktu", TARGET} | set(FITUR_BOCOR) | set(buang)
+    """Daftar kolom fitur: semua kolom kecuali ID, waktu, label, fitur dikecualikan, dan kolom di `buang`."""
+    dikecualikan = set(KOLOM_ID) | {"waktu", TARGET} | set(FITUR_DIKECUALIKAN) | set(buang)
     return [k for k in df.columns if k not in dikecualikan]
 
 
 def tambah_kolom(df, fitur, tambahan):
     """Daftar fitur + kolom `tambahan`, dengan urutan kolom tetap mengikuti urutan di df.
 
-    Dipakai untuk uji bukti kebocoran (sengaja memasukkan kembali kolom bocor). Urutan dijaga
+    Dipakai untuk mengukur sumbangan kolom yang dikecualikan (sengaja dimasukkan kembali). Urutan dijaga
     karena urutan kolom ikut menentukan hasil acak LightGBM (colsample_bytree).
     """
     pilih = set(fitur) | set(tambahan)

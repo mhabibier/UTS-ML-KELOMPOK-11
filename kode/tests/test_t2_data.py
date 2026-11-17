@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from t2_data import (BATAS_LABEL_MATANG, FITUR_BOCOR, KOLOM_ID, TARGET,
+from t2_data import (BATAS_LABEL_MATANG, FITUR_DIKECUALIKAN, KOLOM_ID, TARGET,
                      buat_lipatan_waktu, data_matang, fitur_model, tambah_kolom)
 
 
@@ -26,6 +26,7 @@ def df_tiruan():
         "nominal": rng.uniform(1, 100, len(waktu)),
         "flag_review_manual": rng.integers(0, 2, len(waktu)),
         "umur_merchant_hari": rng.integers(-10, 500, len(waktu)),
+        "volume_merchant_30h": rng.integers(3, 5000, len(waktu)),
         "jumlah_akun_per_perangkat": rng.integers(1, 4, len(waktu)),
         TARGET: rng.integers(0, 2, len(waktu)),
     })
@@ -87,16 +88,16 @@ def test_lipatan_kosong_ditolak(df_tiruan):
         buat_lipatan_waktu(df_tiruan, n_lipatan=20)
 
 
-def test_fitur_model_tanpa_id_label_dan_bocor(df_tiruan):
+def test_fitur_model_tanpa_id_label_dan_kolom_dikecualikan(df_tiruan):
     fitur = fitur_model(df_tiruan)
-    for kol in KOLOM_ID + FITUR_BOCOR + ["waktu", TARGET]:
+    for kol in KOLOM_ID + FITUR_DIKECUALIKAN + ["waktu", TARGET]:
         assert kol not in fitur
     assert "nominal" in fitur
     assert "jumlah_akun_per_perangkat" not in fitur_model(df_tiruan, buang=["jumlah_akun_per_perangkat"])
 
 
 def test_tambah_kolom_menjaga_urutan(df_tiruan):
-    """Memasukkan kembali kolom bocor (untuk uji bukti) tidak boleh mengubah urutan kolom lain."""
+    """Memasukkan kembali kolom yang dikecualikan (untuk diukur) tidak boleh mengubah urutan kolom lain."""
     fitur = fitur_model(df_tiruan)
     dengan = tambah_kolom(df_tiruan, fitur, ["umur_merchant_hari"])
     assert dengan == [k for k in df_tiruan.columns if k in set(fitur) | {"umur_merchant_hari"}]
