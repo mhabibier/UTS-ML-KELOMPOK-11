@@ -13,9 +13,13 @@ Tahap validasi (PR 2):
   8. uji ulang kolom "dipantau" dengan beberapa seed,
   9. bukti kebocoran umur_merchant_hari (sengaja dimasukkan kembali untuk diukur).
 
+Tahap fitur (PR 3):
+  10. evaluasi fitur buatan sendiri (kode/t2_fitur.py) per kelompok, 4 lipatan x 5 seed.
+
 Cara menjalankan dari akar repo:
     python kode/task2_klasifikasi.py                    # semua tahap
     python kode/task2_klasifikasi.py --tahap validasi   # hanya validasi
+    python kode/task2_klasifikasi.py --tahap fitur      # hanya evaluasi fitur
 
 Semua tabel dan gambar ditulis ke kode/hasil/.
 """
@@ -41,6 +45,8 @@ from t2_data import (BATAS_LABEL_MATANG, FITUR_BOCOR, HASIL_DIR, KOLOM_BINER,
                      KOLOM_DIPANTAU, KOLOM_ID, KOLOM_KATEGORI, SEED, TARGET,
                      bersihkan_kategori, buat_lipatan_waktu, data_matang,
                      fitur_model, muat_data, ringkas_lipatan, tambah_kolom)
+from t2_fitur import (KELOMPOK_FITUR, fitur_label, fitur_statis,
+                      gabung_latih_uji, susun_fitur)
 
 # Banyaknya seed untuk mengukur derau satu kali latih: SEED, SEED+1, ..., SEED+4
 N_SEED_ULANG = 5
@@ -573,11 +579,142 @@ def validasi(df_bersih):
 
 
 # --------------------------------------------------------------------------
+# 10. Evaluasi fitur buatan sendiri (PR 3)
+# --------------------------------------------------------------------------
+def evaluasi_fitur(latih, uji):
+    """Membandingkan model dasar dengan model + setiap kelompok fitur baru (4 lipatan x N seed).
+
+    `latih` dan `uji` = data mentah. Fitur riwayat dihitung pada gabungan keduanya (masa lalu saja).
+    Fitur berlabel (tingkat fraud historis) dihitung ulang untuk setiap lipatan dengan batas label
+    = batas latih lipatan itu, sehingga baris validasi hanya melihat label yang tersedia saat
+    model dilatih, sama seperti data uji nanti.
+    """
+    print(f"\n=== 10. EVALUASI FITUR BUATAN SENDIRI ===")
+    gab = bersihkan_kategori(gabung_latih_uji(latih, uji))
+    gab = pd.concat([gab, fitur_statis(gab)], axis=1)
+    dm = gab[(gab["sumber"] == "latih") & (gab["waktu"] < BATAS_LABEL_MATANG)]
+    lipatan = buat_lipatan_waktu(dm)
+    dasar = fitur_model(latih)   # 78 fitur bawaan (tanpa fitur bocor)
+
+    # Gambaran singkat: tingkat fraud menurut penanda biner baru (data matang)
+    baris = []
+    for kol in ["tanpa_riwayat", "melebihi_saldo", "pertama_di_merchant"]:
+        for nilai, sub in dm.groupby(kol)[TARGET]:
+            baris.append({"fitur": kol, "nilai": int(nilai), "transaksi": len(sub), "tingkat_fraud": sub.mean()})
+    gambaran = pd.DataFrame(baris)
+    gambaran.to_csv(HASIL_DIR / "t2_fitur_gambaran.csv", index=False)
+    print("Tingkat fraud menurut penanda baru:")
+    print(gambaran.to_string(index=False, float_format=FMT))
+
+    # Satu kelompok per konfigurasi, lalu semua kelompok sekaligus
+    konfigurasi = {"dasar": []} | {g: [g] for g in KELOMPOK_FITUR} | {"semua": list(KELOMPOK_FITUR)}
+    bandingkan_konfigurasi(gab, dm, lipatan, dasar, konfigurasi, "t2_fitur", penting_untuk="semua")
+
+    # ---- 11. Kombinasi kelompok ----
+    # merchant_terlihat tidak diikutkan: nilainya terus membesar seiring waktu (merchant lama tampak
+    # baru di awal data), jadi pada data yang lebih baru nilainya keluar dari rentang data latih.
+    # Aturan memilih (ditetapkan sebelum melihat hasil kombinasi): sebuah kelompok ditambahkan bila
+    # selisih rata-ratanya > 0 DAN naik di sedikitnya 3 dari 4 lipatan.
+    print("\n=== 11. KOMBINASI KELOMPOK FITUR ===")
+    label = ["fraud_merchant", "fraud_pengguna"]
+    konfigurasi = {
+        "dasar": [],
+        "fraud_label": label,
+        "fraud_label+riwayat": label + ["riwayat_pengguna"],
+        "fraud_label+riwayat+penanda": label + ["riwayat_pengguna", "penanda"],
+    }
+    bandingkan_konfigurasi(gab, dm, lipatan, dasar, konfigurasi, "t2_fitur_kombinasi",
+                           penting_untuk="fraud_label+riwayat+penanda", per_minggu=True)
+
+
+def bandingkan_konfigurasi(gab, dm, lipatan, dasar, konfigurasi, awalan, penting_untuk=None,
+                           per_minggu=False):
+    """Melatih setiap konfigurasi fitur pada setiap lipatan x seed dan membandingkannya dengan 'dasar'.
+
+    per_minggu=True juga menghitung selisih PR-AUC per minggu validasi. Label fraud historis
+    dibekukan di batas latih, jadi pada minggu ke-k informasinya berumur sekitar 21 + 7(k-1) s.d.
+    21 + 7k hari. Bila manfaat fitur berlabel cepat memudar, selisihnya akan menurun dari minggu 1
+    ke minggu 4 (di data uji, umur informasinya 21-82 hari).
+    """
+    seeds = [SEED + k for k in range(N_SEED_ULANG)]
+    print(f"Konfigurasi: {', '.join(konfigurasi)}  ({len(lipatan)} lipatan x {len(seeds)} seed)")
+
+    baris, penting, mingguan = [], [], []
+    for lp in lipatan:
+        data = pd.concat([dm, fitur_label(gab, lp.batas_latih).loc[dm.index]], axis=1)
+        latih_lp, valid_lp = data.loc[lp.idx_latih], data.loc[lp.idx_valid]
+        y = valid_lp[TARGET]
+        minggu_ke = (((valid_lp["waktu"] - lp.mulai_valid).dt.days // 7) + 1).to_numpy()
+        for nama, kelompok in konfigurasi.items():
+            fitur = susun_fitur(dasar, kelompok)
+            for s in seeds:
+                model = latih_lgbm(latih_lp, fitur, s)
+                prob = model.predict_proba(valid_lp[fitur])[:, 1]
+                baris.append({"konfigurasi": nama, "n_fitur": len(fitur), "lipatan": lp.nomor,
+                              "seed": s, **metrik(y, prob)})
+                if per_minggu:
+                    for m in np.unique(minggu_ke):
+                        pilih = minggu_ke == m
+                        mingguan.append({"konfigurasi": nama, "lipatan": lp.nomor, "seed": s,
+                                         "minggu_ke": int(m),
+                                         "pr_auc": average_precision_score(y[pilih], prob[pilih])})
+                if nama == penting_untuk and s == SEED:
+                    gain = model.booster_.feature_importance(importance_type="gain")
+                    penting.append(pd.Series(gain / gain.sum(), index=fitur, name=lp.nomor))
+        print(f"  lipatan {lp.nomor} selesai")
+
+    def selisih_dasar(tabel, kunci):
+        acuan = tabel[tabel["konfigurasi"] == "dasar"].set_index(kunci)["pr_auc"]
+        return tabel["pr_auc"] - tabel.set_index(kunci).index.map(acuan)
+
+    hasil = pd.DataFrame(baris)
+    hasil["selisih"] = selisih_dasar(hasil, ["lipatan", "seed"])   # pasangan: lipatan dan seed sama
+    hasil.to_csv(HASIL_DIR / f"{awalan}_per_lipatan.csv", index=False)
+    ringkas = hasil.groupby("konfigurasi", sort=False).agg(
+        n_fitur=("n_fitur", "first"),
+        pr_auc_rata2=("pr_auc", "mean"),
+        selisih_rata2=("selisih", "mean"),
+        selisih_sb=("selisih", "std"),
+        n_naik=("selisih", lambda s: int((s > 0).sum())),
+        n_pasangan=("selisih", "size"),
+    )
+    per_lip = hasil.groupby(["konfigurasi", "lipatan"], sort=False)["selisih"].mean().unstack()
+    per_lip.columns = [f"selisih_lipatan{c}" for c in per_lip.columns]
+    ringkas = ringkas.join(per_lip)
+    ringkas.to_csv(HASIL_DIR / f"{awalan}_ringkas.csv")
+    print("\nPR-AUC dan selisih terhadap model dasar (selisih > 0 = fitur membantu):")
+    print(ringkas.to_string(float_format=FMT))
+
+    if per_minggu:
+        mg = pd.DataFrame(mingguan)
+        mg["selisih"] = selisih_dasar(mg, ["lipatan", "seed", "minggu_ke"])
+        mg.to_csv(HASIL_DIR / f"{awalan}_per_minggu.csv", index=False)
+        tabel = (mg[mg["konfigurasi"] != "dasar"]
+                 .groupby(["konfigurasi", "minggu_ke"], sort=False)["selisih"].mean().unstack())
+        tabel.columns = [f"minggu{c} ({21 + 7 * (c - 1)}-{21 + 7 * c} hari)" for c in tabel.columns]
+        print("\nSelisih PR-AUC terhadap dasar per minggu validasi (umur informasi label dalam kurung):")
+        print(tabel.to_string(float_format=FMT))
+
+    if penting:
+        pentingnya = pd.concat(penting, axis=1)
+        pentingnya["rata2"] = pentingnya.mean(axis=1)
+        pentingnya = pentingnya.sort_values("rata2", ascending=False)
+        pentingnya.index.name = "fitur"
+        pentingnya.to_csv(HASIL_DIR / f"{awalan}_pentingnya.csv")
+        baru = {k for g in KELOMPOK_FITUR.values() for k in g[0]}
+        print(f"\n20 fitur terpenting pada '{penting_untuk}' (porsi gain, rata-rata 4 lipatan; * = fitur baru):")
+        for kol, nilai in pentingnya["rata2"].head(20).items():
+            print(f"  {'*' if kol in baru else ' '} {kol:32s} {nilai:.4f}")
+
+
+# --------------------------------------------------------------------------
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Task 2 (klasifikasi fraud)")
     parser.add_argument("--berkas", default="klasifikasi_train.csv.gz",
                         help="nama berkas di folder data/")
-    parser.add_argument("--tahap", choices=["audit", "validasi", "semua"], default="semua")
+    parser.add_argument("--berkas-uji", default="klasifikasi_test.csv.gz",
+                        help="nama berkas data uji di folder data/ (untuk riwayat fitur)")
+    parser.add_argument("--tahap", choices=["audit", "validasi", "fitur", "semua"], default="semua")
     args = parser.parse_args(argv)
 
     HASIL_DIR.mkdir(parents=True, exist_ok=True)
@@ -593,6 +730,8 @@ def main(argv=None):
         uji_kebocoran(df, df_bersih)
     if args.tahap in ("validasi", "semua"):
         validasi(df_bersih)
+    if args.tahap in ("fitur", "semua"):
+        evaluasi_fitur(df, muat_data(args.berkas_uji))
     print(f"\nTabel dan gambar tersimpan di: {HASIL_DIR}")
 
 
