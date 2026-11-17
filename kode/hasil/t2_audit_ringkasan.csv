@@ -1,0 +1,7 @@
+masalah,jumlah_baris,tindakan
+waktu tidak bisa dibaca (NaT),0,periksa format tanggal; baris dibuang bila jumlahnya kecil
+kolom dengan nilai hilang,2,imputasi atau biarkan NaN untuk LightGBM
+id_transaksi ganda,0,"buang duplikat, pertahankan baris pertama"
+nominal <= 0,0,periksa contoh; buang bila bukan transaksi sah
+kolom jam tidak cocok dengan jam di waktu,0,"percayai waktu, hitung ulang jam"
+persen_saldo di luar 0-1,99200,periksa; mungkin saldo kecil atau pengisian ulang
