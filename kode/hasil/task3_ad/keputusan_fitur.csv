@@ -1,0 +1,61 @@
+fitur,keputusan
+id_pelanggan,dikeluarkan: identitas
+recency_hari,dipakai
+frekuensi_90h,dipakai
+belanja_90h,dipakai
+rata2_keranjang,dipakai
+item_per_pesanan,dipakai
+porsi_fashion,dipakai
+porsi_elektronik,dipakai
+porsi_kecantikan,dipakai
+porsi_rumah_tangga,dipakai
+porsi_makanan_minuman,dipakai
+porsi_ibu_bayi,dipakai
+porsi_olahraga,dipakai
+porsi_hobi,dipakai
+porsi_otomotif,dipakai
+porsi_kesehatan,dipakai
+porsi_buku_alat_tulis,dipakai
+porsi_voucher_digital,dipakai
+porsi_gadget_aksesoris,dipakai
+porsi_perabot,dipakai
+porsi_pertanian,dipakai
+porsi_lainnya,dipakai
+porsi_jam_pagi,dipakai
+porsi_jam_siang,dipakai
+porsi_jam_sore,dipakai
+porsi_jam_malam,dipakai
+persen_voucher,dipakai
+persen_flash_sale,dipakai
+persen_paylater,dipakai
+persen_cod,dipakai
+retur_90h,dipakai
+rating_beri_rata2,dipakai
+ulasan_90h,dipakai
+sesi_per_minggu,dipakai
+durasi_sesi_menit,dipakai
+rasio_konversi,dipakai
+lama_member_bulan,dipakai
+umur,dipakai
+kota_tier,dipakai
+perangkat,dipakai
+jumlah_alamat,dipakai
+wishlist,dipakai
+klik_iklan_30h,dipakai
+belanja_30h,dikeluarkan: redundan dengan belanja_90h
+frekuensi_30h,dipakai
+n01,dikeluarkan utama: anonim; diuji ablation
+n02,dikeluarkan utama: anonim; diuji ablation
+n03,dikeluarkan utama: anonim; diuji ablation
+n04,dikeluarkan utama: anonim; diuji ablation
+n05,dikeluarkan utama: anonim; diuji ablation
+n06,dikeluarkan utama: anonim; diuji ablation
+n07,dikeluarkan utama: anonim; diuji ablation
+n08,dikeluarkan utama: anonim; diuji ablation
+n09,dikeluarkan utama: anonim; diuji ablation
+n10,dikeluarkan utama: anonim; diuji ablation
+n11,dikeluarkan utama: anonim; diuji ablation
+n12,dikeluarkan utama: anonim; diuji ablation
+n13,dikeluarkan utama: anonim; diuji ablation
+n14,dikeluarkan utama: anonim; diuji ablation
+n15,dikeluarkan utama: anonim; diuji ablation

@@ -1,0 +1,39 @@
+{
+  "scope": "Task 3 a-d; kandidat, belum output final e-g",
+  "seed": 42,
+  "n_fit": 6000,
+  "n_score": 1500,
+  "k_grid": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+  ],
+  "metode_kandidat": "GaussianMixture_diag",
+  "k_kandidat": 2,
+  "aturan": "rata-rata rank silhouette dan Davies-Bouldin pada sampel tetap; tie k kecil",
+  "batas_grid": true,
+  "sha256_input": "765f91f40c82646077ba11ec7e491efd9ac1b70d06dfa4419339b8f9493b9250",
+  "python": "3.13.0",
+  "versi": {
+    "numpy": "2.5.4",
+    "pandas": "3.1.1",
+    "scipy": "1.18.1",
+    "scikit-learn": "1.9.1",
+    "matplotlib": "3.11.2"
+  },
+  "batasan": [
+    "Preprocessing pada populasi penuh tanpa label; evaluasi deskriptif, bukan holdout.",
+    "Fit dan evaluasi metode memakai sampel yang sama; skor internal optimistis.",
+    "Belum stabilitas resampling, profil tindakan, atau penandaan anomali.",
+    "CRM anonim dikecualikan secara konservatif; bukan bukti semua fitur CRM tidak relevan.",
+    "Partisi sampel tidak boleh dikumpulkan sebagai cluster.csv final."
+  ]
+}

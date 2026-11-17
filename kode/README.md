@@ -20,3 +20,8 @@ python kode/run_all.py
 ```
 
 Catatan: perintah reproduksi akan dapat digunakan setelah seluruh skrip selesai dibuat.
+
+## Task 3 a-d tersedia
+
+Lihat [panduan Task 3](README_TASK3.md) dan [notebook](Task3_Clustering.ipynb).
+Peluncur khusus: `python kode/run_task3_ad.py`. Perintah gabungan kelompok belum tersedia.
