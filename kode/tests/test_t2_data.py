@@ -101,3 +101,14 @@ def test_tambah_kolom_menjaga_urutan(df_tiruan):
     dengan = tambah_kolom(df_tiruan, fitur, ["umur_merchant_hari"])
     assert dengan == [k for k in df_tiruan.columns if k in set(fitur) | {"umur_merchant_hari"}]
     assert [k for k in dengan if k != "umur_merchant_hari"] == fitur
+
+
+def test_kamus_kategori_hanya_train():
+    from t2_data import matriks_lgbm
+    train = pd.DataFrame({'kanal': pd.Categorical([' A ', 'b'], categories=[' A ', 'b', 'masa_depan'])})
+    valid = pd.DataFrame({'kanal': ['a', 'masa_depan', None]})
+    a, b = matriks_lgbm(train, valid, ['kanal'])
+    assert a.kanal.cat.categories.tolist() == ['a', 'b']
+    assert b.kanal.iloc[0] == 'a'
+    assert b.kanal.iloc[1:].isna().all()
+    assert 'masa_depan' in train.kanal.cat.categories
