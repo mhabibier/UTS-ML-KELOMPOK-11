@@ -1,0 +1,7 @@
+pembanding,susunan,n_fitur,auc
+Jan-Agt vs Sep-Okt,87 fitur terpilih,87,0.998082069148884
+Jan-Agt vs Sep-Okt,tanpa kolom kumulatif,81,0.9392969722082825
+Jan-Agt vs Sep-Okt,tanpa kumulatif & tingkat_fraud_merchant,80,0.8580502198185304
+Jul-Agt vs Sep-Okt,87 fitur terpilih,87,0.9962913382769037
+Jul-Agt vs Sep-Okt,tanpa kolom kumulatif,81,0.8984251750107942
+Jul-Agt vs Sep-Okt,tanpa kumulatif & tingkat_fraud_merchant,80,0.6897798291998661
