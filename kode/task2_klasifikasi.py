@@ -711,6 +711,8 @@ def evaluasi_fitur(gab, dm, lipatan, dasar):
     akhir = pd.concat([penilai.nilai([]).assign(konfigurasi="dasar"),
                        penilai.nilai(terpilih).assign(konfigurasi="terpilih")])
     ringkas_selisih(akhir, "dasar", "t2_fitur_terpilih")
+    print("Catatan: skor ini memakai lipatan yang juga dipakai memilih kelompok fitur; "
+          "ini hasil pengembangan, bukan evaluasi akhir yang independen.")
     mg = pd.concat([penilai.mingguan([]).assign(konfigurasi="dasar"),
                     penilai.mingguan(terpilih).assign(konfigurasi="terpilih")])
     acuan = mg[mg["konfigurasi"] == "dasar"].set_index(["lipatan", "seed", "minggu_ke"])["pr_auc"]
@@ -895,6 +897,8 @@ def ringkas_cara(hasil, acuan, awalan):
         print(f"\nRingkasan (rata-rata {hasil['lipatan'].nunique()} lipatan x {hasil['seed'].nunique()} seed; "
               f"selisih = PR-AUC - PR-AUC '{acuan}', berpasangan):")
         print(ringkas.to_string(float_format=FMT))
+    print("Catatan: lipatan yang sama dipakai untuk membandingkan dan memilih cara, jadi skor ini hasil\n"
+          "pengembangan (cenderung sedikit optimistis), bukan evaluasi akhir yang independen.")
     return ringkas
 
 
@@ -968,14 +972,18 @@ def pergeseran_pola(eks, lipatan):
         sisa = [k for k in eks.fitur if k not in bergeser]
         cara[f"buang kolom bergeser ({', '.join(bergeser)})"] = lambda latih, lp, s: {"fitur": sisa}
     hasil = [eks.jalankan(n, lipatan, c) for n, c in cara.items()]
-    # Panjang jeda: data validasi tetap, hanya batas latih yang mundur/maju (label fitur ikut batas latih)
+    # Panjang jeda: data validasi tetap, hanya batas latih yang mundur/maju (label fitur ikut batas latih).
+    # Jeda 7 dan 14 hari HIPOTETIS: dengan label yang baru matang +-21 hari, model nyata tidak bisa
+    # dilatih sedekat itu. Angkanya hanya mengukur seberapa cepat model menua, bukan pilihan yang bisa dipakai.
     for j in (7, 14, 35):
-        hasil.append(eks.jalankan(f"jeda {j} hari", buat_lipatan_waktu(eks.dm, jeda_hari=j)))
+        nama = f"jeda {j} hari" + (" (hipotetis)" if j < 21 else "")
+        hasil.append(eks.jalankan(nama, buat_lipatan_waktu(eks.dm, jeda_hari=j)))
     ringkas_cara(pd.concat(hasil), "dasar", "t2_pergeseran")
     print("Baca hasilnya: 'dasar' = bobot rata, latih sejak 1 Jan, jeda 21 hari. Bobot waktu memberi\n"
           "transaksi lama bobot lebih kecil; 'latih mulai' membuang baris awal dari data latih (tetap\n"
-          "dipakai sebagai riwayat fitur). Jeda lebih pendek = model lebih 'segar'; selisihnya mengukur\n"
-          "seberapa cepat model menua (data uji berjarak 21-82 hari dari label terakhir).")
+          "dipakai sebagai riwayat fitur). Jeda 7 dan 14 hari HANYA sensitivitas hipotetis: menurut asumsi\n"
+          "label matang 21 hari, label yang lebih baru belum tersedia saat model dipakai. Selisihnya\n"
+          "mengukur seberapa cepat model menua (data uji berjarak 21-82 hari dari label terakhir).")
 
     diagnosis_minggu_terakhir(eks, lipatan[-1])
     kematangan_label(eks, lipatan[-1])
