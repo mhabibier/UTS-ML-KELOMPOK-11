@@ -4,6 +4,10 @@ import json
 import time
 from pathlib import Path
 
+import matplotlib
+
+matplotlib.use('Agg')  # Peluncur tanpa UI tetap dapat menyimpan grafik.
+
 
 def main():
     parser=argparse.ArgumentParser()

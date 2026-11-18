@@ -100,7 +100,7 @@ CRM anonim dikecualikan secara konservatif; bukan bukti semua fitur CRM tidak re
 
 Partisi sampel tidak boleh dikumpulkan sebagai cluster.csv final.
 
-Tahap berikutnya e–g dilakukan bersama: stabilitas bootstrap/subsampling dengan ARI, profil/aksi pemasaran, dan aturan anomali -1. Baru setelah itu buat cluster.csv lengkap 120.000 pelanggan.
+Tahap berikutnya e–g dilakukan bersama: stabilitas bootstrap/subsampling dengan ARI, profil/aksi pemasaran, dan aturan anomali -1. cluster.csv sementara dibuat dari kandidat a-d untuk integrasi, lalu harus diganti sebelum pengumpulan final.
 
 ## Reproduksi dan AI
 

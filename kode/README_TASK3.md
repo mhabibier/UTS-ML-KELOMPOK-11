@@ -31,6 +31,16 @@ pengumpulan. Bagian e (stabilitas resampling), f (profil dan aksi), g (anomali -
 belum dikerjakan dan perlu dilanjutkan bersama. Tidak ada klaim skor ARI referensi
 tersembunyi; ARI ablation hanya sensitivitas fitur.
 
+## cluster.csv sementara
+
+Run All juga membuat `cluster.csv` di akar repository untuk kebutuhan integrasi
+kelompok: satu baris per pelanggan, kolom tepat `id_pelanggan,cluster`. Kandidat
+Gaussian Mixture diagonal k=2 dilatih pada sampel 6.000, lalu memprediksi seluruh
+120.000 pelanggan dengan preprocessing a-d yang sama. Metadata ada di
+`hasil/task3_ad/cluster_sementara_meta.json`. File ini sementara: belum ada
+uji stabilitas, profil dan aksi segmen, atau label anomali `-1`. Ganti hasilnya
+setelah bagian e-g selesai sebelum pengumpulan final.
+
 Codex membantu audit, implementasi, eksperimen, tes, dan draf laporan. Muhammad
 Habibie Rabbani (101032300005) perlu meninjau dan memahami hasil; kontribusi teman
 pada tahap berikutnya dicatat melalui PR sendiri. Belum persetujuan kelompok.
