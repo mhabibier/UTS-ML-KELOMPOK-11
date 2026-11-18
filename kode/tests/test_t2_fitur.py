@@ -12,13 +12,34 @@ from pandas.testing import assert_frame_equal
 
 from t2_data import TARGET
 from t2_fitur import (KELOMPOK_FITUR, KELOMPOK_TERPILIH, fitur_fraud_historis,
-                      fitur_label, fitur_riwayat_pengguna, fitur_statis,
+                      fitur_label, fitur_merchant_terlihat, fitur_riwayat_pengguna, fitur_statis,
                       gabung_latih_uji, susun_fitur)
 
 BATAS = pd.Timestamp("2025-08-11")
 # Aturan yang sudah diputuskan (label matang 3 minggu). Sengaja ditulis ulang di sini, tidak
 # di-import dari t2_fitur, supaya tes gagal bila jeda di kode berubah tanpa disengaja.
 JEDA_LABEL_HARI = 21
+
+
+def test_riwayat_waktu_sama_tidak_saling_melihat():
+    t = pd.Timestamp("2025-05-01 10:00")
+    df = pd.DataFrame({
+        "id_transaksi": ["a", "b", "c", "d", "e"],
+        "waktu": [t - pd.Timedelta(days=2), t - pd.Timedelta(days=1), t, t, t],
+        "id_pengguna": [1] * 5,
+        "id_merchant": [9, 8, 9, 9, 10],
+        "nominal": [100.0, 120.0, 200.0, 300.0, 400.0],
+    })
+    pengguna = fitur_riwayat_pengguna(df)
+    merchant = fitur_merchant_terlihat(df)
+    assert pengguna.loc[[2, 3, 4], "jumlah_trx_sebelum"].tolist() == [2, 2, 2]
+    assert pengguna.loc[[2, 3, 4], "jumlah_merchant_sebelum"].tolist() == [2, 2, 2]
+    assert pengguna.loc[[2, 3, 4], "pertama_di_merchant"].tolist() == [0, 0, 1]
+    assert merchant.loc[[2, 3], "jumlah_trx_merchant_sebelum"].tolist() == [1, 1]
+    assert merchant.loc[4, "jumlah_trx_merchant_sebelum"] == 0
+    # Statistik nominal untuk transaksi serentak hanya boleh memakai dua nominal lama.
+    expected_sd = np.log1p([100.0, 120.0]).std(ddof=1)
+    np.testing.assert_allclose(pengguna.loc[[2, 3, 4], "sb_log_nominal_sebelum"], expected_sd)
 
 
 @pytest.fixture

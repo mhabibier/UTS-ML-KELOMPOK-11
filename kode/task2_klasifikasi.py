@@ -691,6 +691,8 @@ def evaluasi_fitur(latih, uji):
     akhir = pd.concat([penilai.nilai([]).assign(konfigurasi="dasar"),
                        penilai.nilai(terpilih).assign(konfigurasi="terpilih")])
     ringkas_selisih(akhir, "dasar", "t2_fitur_terpilih")
+    print("Catatan: skor ini memakai lipatan yang juga dipakai memilih kelompok fitur; "
+          "ini hasil pengembangan, bukan evaluasi akhir yang independen.")
     mg = pd.concat([penilai.mingguan([]).assign(konfigurasi="dasar"),
                     penilai.mingguan(terpilih).assign(konfigurasi="terpilih")])
     acuan = mg[mg["konfigurasi"] == "dasar"].set_index(["lipatan", "seed", "minggu_ke"])["pr_auc"]
