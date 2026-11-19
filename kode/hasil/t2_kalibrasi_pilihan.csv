@@ -1,0 +1,2 @@
+model,pendekatan,kalibrasi,aturan,biaya_juta,pr_auc,rasio_rata2
+dasar,b: latih ulang,Platt,prob x nominal > 25.000,41.007425000000005,0.7576888632709977,1.0975605059550617

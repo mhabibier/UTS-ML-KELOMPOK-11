@@ -1,0 +1,15 @@
+{
+  "scope": "LightGBM first temporal fold, full official dataset",
+  "scores": {
+    "pr_auc": 0.7562706943767096,
+    "roc_auc": 0.9783440795671535
+  },
+  "prior_scores": {
+    "pr_auc": 0.7562706943767096,
+    "roc_auc": 0.9783440795671535
+  },
+  "same_within_1e-12": true,
+  "seconds": 15.207125299988547,
+  "tests": 9,
+  "limitations": "Other training experiments not rerun; original full results retained, not claimed regenerated."
+}
