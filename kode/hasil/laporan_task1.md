@@ -160,3 +160,18 @@ Codex membantu menulis/debug skrip, menjalankan eksperimen, menyusun tabel/grafi
 - [scikit-learn: OneHotEncoder](https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.OneHotEncoder.html)
 - [scikit-learn: partial dependence](https://scikit-learn.org/stable/modules/partial_dependence.html)
 - [Angelopoulos dan Bates: pengantar conformal prediction](https://arxiv.org/abs/2107.07511)
+
+
+## Tambahan review: SHAP dan refit eksploratif
+
+SHAP bawaan LightGBM dihitung pada 10.000 sampel Agustus untuk model P50/P90 sebelum Juli. Jumlah kontribusi dan bias diverifikasi sama dengan output mentah. Ringkasan per layanan, pulau dan kurir ada di review_tambahan/shap_ringkasan.csv. Ini bukan sebab-akibat; clipping dan kalibrasi tidak dijelaskan oleh kontribusi mentah.
+
+![SHAP P90](review_tambahan/shap_p90.png)
+
+| model | pinball_p50 | coverage_p50 | pinball_p90 | coverage_p90 | mae_p50_jam |
+| --- | --- | --- | --- | --- | --- |
+| model_tetap_kalibrasi | 10.865726 | 0.474391 | 11.406934 | 0.897624 | 21.731452 |
+| refit_tanpa_koreksi | 10.594306 | 0.505561 | 11.220799 | 0.890102 | 21.188612 |
+| refit_koreksi_model_lama | 10.594306 | 0.505561 | 11.245170 | 0.918345 | 21.188612 |
+
+Refit historis memakai label yang tersedia sebelum Agustus. Evaluasi ini eksploratif karena Agustus telah diperiksa. Koreksi dari model lama tidak menjamin coverage setelah refit. Kandidat refit seluruh train disimpan terpisah; mengasumsikan seluruh label file tersedia, sedangkan prediksi utama tetap memakai skema kalibrasi sebelumnya. Keputusan submission akhir dibahas bersama kelompok.
