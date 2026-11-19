@@ -110,7 +110,7 @@ def siapkan(data: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray, dict[str, np.
     keputusan = pd.DataFrame([{"fitur": c, "keputusan":
                               "ID" if c == "id_pelanggan" else
                               "CRM anonim (tidak dipakai)" if c in crm else
-                              f"redundan dengan {drop[c]}" if c in drop else "dipakai"}
+                              f"redundan dengan {drop[c]}" if c in drop else "ablation; keputusan menunggu uji stabilitas e" if c in cat else "dipakai"}
                              for c in data.columns])
     return active, x, blocks, keputusan, params
 

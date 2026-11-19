@@ -23,12 +23,13 @@ yang diuji: Python 3.13, versi pustaka pada `requirements-task3.txt`.
 - Komposisi kategori dan jam belanja ditransformasi dengan CLR setelah
   pseudocount `0,0001`. Fitur numerik diimputasi median, dibatasi persentil 1–99,
   log1p bila miring, lalu distandardisasi. ID dan fitur CRM anonim tidak dipakai.
-- Ablation kelompok fitur menunjukkan menambah komposisi kategori menurunkan
-  silhouette dari 0,141 menjadi 0,116 dan stabilitas eksploratif dari 0,897 ke
-  0,894, sehingga blok itu tidak masuk representasi utama. Menghilangkan
-  komposisi waktu menaikkan silhouette tetapi menurunkan stabilitas ke 0,879,
-  maka blok itu tetap dipakai. Ablation ini pada sampel yang sama dan belum
-  menjadi bukti akhir; bagian e perlu 20–50 subsampel.
+- Keputusan komposisi kategori **belum final**. Tiga run awal tidak cukup
+  untuk menyimpulkan blok kategori merugikan stabilitas. Reviewer melaporkan
+  10 run: tanpa kategori ARI 0,736 ± 0,316, dengan kategori 0,867 ± 0,072.
+  Angka reviewer belum direproduksi oleh skrip a–d ini. Bagian e membandingkan
+  keduanya pada 20–50 subsampel yang sama sebelum memilih representasi final.
+  CSV sementara tetap memakai konfigurasi lama agar hasil review dapat dilacak.
+  Profil kategori dominan tetap dapat dihitung dari data asli pada bagian f.
 - MiniBatch K-Means, Gaussian Mixture diagonal, dan HDBSCAN dibandingkan pada
   6.000 pelanggan aktif yang sama. K-Means/GMM dievaluasi untuk k=2–12 dengan
   silhouette dan Davies–Bouldin; BIC hanya dibandingkan dalam keluarga GMM.
@@ -39,8 +40,7 @@ yang diuji: Python 3.13, versi pustaka pada `requirements-task3.txt`.
 
 Hasil revisi ada di `kode/hasil/task3_ad_revisi/`: tabel metode/k, ablation per
 kelompok, keputusan fitur, parameter preprocessing, grafik, dan metadata.
-Hasil `kode/hasil/task3_ad/` adalah eksperimen lama sebelum masukan review;
-gunakan folder revisi untuk laporan berikutnya.
+Hasil eksperimen lama dihapus dari working tree; riwayatnya tetap tersedia di Git.
 
 ## cluster.csv sementara
 
