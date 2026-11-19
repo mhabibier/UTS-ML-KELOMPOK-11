@@ -33,8 +33,9 @@ Tahap shift (PR 4):
   13f. kematangan label: fraud teramati vs diharapkan model sampai 31 Agt (kepekaan batas label).
 
 Tahap kalibrasi (PR 5):
-  14. kalibrasi probabilitas (tanpa, Platt, isotonik) pada periode kalibrasi 4 minggu yang terpisah dari
-      data latih, biaya aturan prob x nominal > 25.000 vs tidak menandai / menandai semua / ambang lain,
+  14. kalibrasi probabilitas (tanpa, Platt, isotonik) pada periode kalibrasi 4 minggu yang tidak dilihat
+      model penghasil skor kalibrasi (model akhir pendekatan b dilatih ulang termasuk periode itu),
+      biaya aturan prob x nominal > 25.000 vs tidak menandai / menandai semua / ambang lain,
       diagram reliabilitas, dan pemilihan kombinasi dengan aturan tetap.
 
 Cara menjalankan dari akar repo:
@@ -1158,8 +1159,12 @@ def kalibrasi_biaya(eks, lipatan):
     Setiap lipatan: latih | kalibrasi 4 minggu | jeda 3 minggu | validasi 4 minggu (validasi sama
     dengan bagian 5-13). Dua pendekatan:
       a: model dilatih sebelum periode kalibrasi; pengalibrasi dipelajari dari skornya di periode itu.
-      b: pengalibrasi dari (a) dipasang pada model yang dilatih ulang sampai awal jeda (lebih segar,
-         sama dengan model di bagian 12-13; sedikit tidak cocok dengan pengalibrasinya).
+      b: pengalibrasi dari (a) dipasang pada model yang dilatih ulang sampai awal jeda, TERMASUK data
+         periode kalibrasi (lebih segar, sama dengan model di bagian 12-13; sedikit tidak cocok dengan
+         pengalibrasinya).
+    Pada kedua pendekatan, pengalibrasi dipelajari dari skor model (a) yang belum pernah melihat periode
+    kalibrasi. Pada (b), periode kalibrasi terpisah dari model yang dipakai mempelajari pengalibrasi,
+    tetapi tidak dari model akhir.
     """
     print(f"\n=== 14. KALIBRASI PROBABILITAS DAN ATURAN BIAYA ({len(lipatan)} lipatan x {len(eks.seeds)} seed) ===")
     lip_kal = buat_lipatan_waktu(eks.dm, panjang_kalibrasi_hari=PANJANG_KALIBRASI_HARI)
