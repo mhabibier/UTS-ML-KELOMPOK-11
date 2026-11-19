@@ -32,12 +32,19 @@ Tahap shift (PR 4):
   13e. diagnosis per minggu lipatan 4,
   13f. kematangan label: fraud teramati vs diharapkan model sampai 31 Agt (kepekaan batas label).
 
+Tahap kalibrasi (PR 5):
+  14. kalibrasi probabilitas (tanpa, Platt, isotonik) pada periode kalibrasi 4 minggu yang tidak dilihat
+      model penghasil skor kalibrasi (model akhir pendekatan b dilatih ulang termasuk periode itu),
+      biaya aturan prob x nominal > 25.000 vs tidak menandai / menandai semua / ambang lain,
+      diagram reliabilitas, dan pemilihan kombinasi dengan aturan tetap.
+
 Cara menjalankan dari akar repo:
     python kode/task2_klasifikasi.py                    # semua tahap
     python kode/task2_klasifikasi.py --tahap validasi   # hanya validasi
     python kode/task2_klasifikasi.py --tahap fitur      # hanya evaluasi fitur
     python kode/task2_klasifikasi.py --tahap imbalance  # hanya kelas tidak seimbang (PR 4)
     python kode/task2_klasifikasi.py --tahap shift      # hanya pergeseran pola (PR 4)
+    python kode/task2_klasifikasi.py --tahap kalibrasi  # hanya kalibrasi dan biaya (PR 5)
 
 Semua tabel dan gambar ditulis ke kode/hasil/.
 """
@@ -65,8 +72,9 @@ from t2_data import (BATAS_LABEL_MATANG, FITUR_DIKECUALIKAN, HASIL_DIR, KOLOM_BI
                      fitur_model, muat_data, ringkas_lipatan, tambah_kolom, matriks_lgbm)
 from t2_fitur import (KELOMPOK_FITUR, KELOMPOK_TERPILIH, fitur_label, fitur_statis,
                       gabung_latih_uji, susun_fitur)
-from t2_latih import (BIAYA_TANDAI, bobot_nominal, bobot_waktu, koreksi_sampel_kurang,
-                      metrik_lengkap, rasio_sah_fraud, sampel_kurang)
+from t2_latih import (BIAYA_TANDAI, biaya, bobot_nominal, bobot_waktu, kalibrasi_isotonik,
+                      kalibrasi_platt, koreksi_sampel_kurang, metrik_lengkap, pilih_ambang,
+                      rasio_sah_fraud, sampel_kurang, tabel_reliabilitas)
 
 # Banyaknya seed untuk mengukur derau satu kali latih: SEED, SEED+1, ..., SEED+4
 N_SEED_ULANG = 5
@@ -1118,13 +1126,188 @@ def kematangan_label(eks, lp):
 
 
 # --------------------------------------------------------------------------
+# 14. Kalibrasi probabilitas dan aturan biaya (PR 5)
+# --------------------------------------------------------------------------
+PANJANG_KALIBRASI_HARI = 28
+ATURAN_SOAL = "prob x nominal > 25.000"
+# Urutan kesederhanaan untuk aturan pemilihan (kiri = lebih sederhana)
+URUTAN_MODEL = ["dasar", f"undersampling 1:{RASIO_UNDERSAMPLING}"]
+URUTAN_PENDEKATAN = ["b: latih ulang", "a: latih < kalibrasi"]
+URUTAN_KALIBRASI = ["tanpa", "Platt", "isotonik"]
+
+
+def _prob_kandidat(model, latih, sasaran, fitur, seed, nomor):
+    """Melatih kandidat model pada `latih`, lalu probabilitas (skala asli) untuk setiap data di `sasaran`."""
+    koreksi = None
+    if model.startswith("undersampling"):
+        posisi, beta = sampel_kurang(latih[TARGET].to_numpy(), RASIO_UNDERSAMPLING,
+                                     np.random.default_rng(1000 * seed + nomor))
+        latih = latih.iloc[posisi]
+        koreksi = beta
+    m = latih_lgbm(latih, fitur, seed)
+    hasil = []
+    for data in sasaran:
+        _, x = matriks_lgbm(latih, data, fitur)
+        p = m.predict_proba(x)[:, 1]
+        hasil.append(koreksi_sampel_kurang(p, koreksi) if koreksi is not None else p)
+    return hasil
+
+
+def kalibrasi_biaya(eks, lipatan):
+    """Kalibrasi pada periode terpisah, lalu biaya aturan prob x nominal > 25.000 dan pembandingnya.
+
+    Setiap lipatan: latih | kalibrasi 4 minggu | jeda 3 minggu | validasi 4 minggu (validasi sama
+    dengan bagian 5-13). Dua pendekatan:
+      a: model dilatih sebelum periode kalibrasi; pengalibrasi dipelajari dari skornya di periode itu.
+      b: pengalibrasi dari (a) dipasang pada model yang dilatih ulang sampai awal jeda, TERMASUK data
+         periode kalibrasi (lebih segar, sama dengan model di bagian 12-13; sedikit tidak cocok dengan
+         pengalibrasinya).
+    Pada kedua pendekatan, pengalibrasi dipelajari dari skor model (a) yang belum pernah melihat periode
+    kalibrasi. Pada (b), periode kalibrasi terpisah dari model yang dipakai mempelajari pengalibrasi,
+    tetapi tidak dari model akhir.
+    """
+    print(f"\n=== 14. KALIBRASI PROBABILITAS DAN ATURAN BIAYA ({len(lipatan)} lipatan x {len(eks.seeds)} seed) ===")
+    lip_kal = buat_lipatan_waktu(eks.dm, panjang_kalibrasi_hari=PANJANG_KALIBRASI_HARI)
+    tabel_lip = ringkas_lipatan(eks.dm, lip_kal)
+    tabel_lip.to_csv(HASIL_DIR / "t2_kalibrasi_lipatan.csv", index=False)
+    print(tabel_lip[["lipatan", "latih_sampai_sebelum", "jeda_mulai", "valid_mulai", "latih_baris",
+                     "kalibrasi_baris", "valid_fraud"]].to_string(index=False))
+
+    baris, platt, rel = [], [], []
+    for lk, lp in zip(lip_kal, lipatan):
+        assert np.array_equal(lk.idx_valid, lp.idx_valid), "data validasi harus sama"
+        data_a = pd.concat([eks.dm, eks.label(lk.batas_latih).loc[eks.dm.index]], axis=1)
+        latih_a, kal, valid_a = (data_a.loc[lk.idx_latih], data_a.loc[lk.idx_kalibrasi],
+                                 data_a.loc[lk.idx_valid])
+        latih_b, valid_b = eks.data_lipatan(lp)
+        y, nom = valid_a[TARGET].to_numpy(), valid_a["nominal"].to_numpy()
+        yk, nomk = kal[TARGET].to_numpy(), kal["nominal"].to_numpy()
+        dasar_baris = {"lipatan": lp.nomor}
+        for aturan, tandai in (("tidak menandai apa pun", np.zeros(len(y), bool)),
+                               ("menandai semua", np.ones(len(y), bool))):
+            for s in eks.seeds:
+                baris.append({**dasar_baris, "seed": s, "model": "-", "pendekatan": "-", "kalibrasi": "-",
+                              "aturan": aturan, "n_tandai": int(tandai.sum()), "biaya_juta": biaya(y, nom, tandai) / 1e6})
+        for s in eks.seeds:
+            for model in URUTAN_MODEL:
+                p_kal, p_va = _prob_kandidat(model, latih_a, [kal, valid_a], eks.fitur, s, lp.nomor)
+                (p_vb,) = _prob_kandidat(model, latih_b, [valid_b], eks.fitur, s, lp.nomor)
+                f_platt, (a, b) = kalibrasi_platt(p_kal, yk)
+                pengubah = {"tanpa": lambda p: p, "Platt": f_platt, "isotonik": kalibrasi_isotonik(p_kal, yk)}
+                k_kal, _ = pilih_ambang(p_kal, nomk, yk)
+                platt.append({"lipatan": lp.nomor, "seed": s, "model": model, "a": a, "b": b,
+                              "k_dari_kalibrasi": k_kal,
+                              "rasio_rata2_kalibrasi": p_kal.mean() / yk.mean()})
+                for pend, p_v in ((URUTAN_PENDEKATAN[1], p_va), (URUTAN_PENDEKATAN[0], p_vb)):
+                    umum = {**dasar_baris, "seed": s, "model": model, "pendekatan": pend}
+                    for kn, f in pengubah.items():
+                        q = f(p_v)
+                        baris.append({**umum, "kalibrasi": kn, "aturan": ATURAN_SOAL, **metrik_lengkap(y, q, nom)})
+                        if s == eks.seeds[0] and model == URUTAN_MODEL[0] and pend == URUTAN_PENDEKATAN[0]:
+                            rel.append(pd.DataFrame({"kalibrasi": kn, "lipatan": lp.nomor, "y": y, "p": q}))
+                    baris.append({**umum, "kalibrasi": "tanpa", "aturan": "prob x nominal > k (k dari periode kalibrasi)",
+                                  "k": k_kal, **metrik_lengkap(y, p_v, nom, p_v * nom > k_kal)})
+                    k_or, _ = pilih_ambang(p_v, nom, y)
+                    baris.append({**umum, "kalibrasi": "tanpa", "aturan": "ambang terbaik di validasi (tidak tercapai)",
+                                  "k": k_or, **metrik_lengkap(y, p_v, nom, p_v * nom > k_or)})
+        print(f"  lipatan {lp.nomor} selesai")
+
+    hasil = pd.DataFrame(baris)
+    hasil.to_csv(HASIL_DIR / "t2_kalibrasi_per_lipatan.csv", index=False)
+    platt = pd.DataFrame(platt)
+    platt.to_csv(HASIL_DIR / "t2_kalibrasi_platt.csv", index=False)
+
+    # ---- Ringkasan: biaya berpasangan terhadap acuan "dasar | b | tanpa | aturan soal" ----
+    kunci = ["model", "pendekatan", "kalibrasi", "aturan"]
+    acuan = (URUTAN_MODEL[0], URUTAN_PENDEKATAN[0], "tanpa", ATURAN_SOAL)
+    def biaya_kombinasi(nilai):
+        """Biaya per (lipatan, seed) untuk satu kombinasi model | pendekatan | kalibrasi | aturan."""
+        pilih = np.logical_and.reduce([hasil[k] == v for k, v in zip(kunci, nilai)])
+        return hasil[pilih].set_index(["lipatan", "seed"])["biaya_juta"]
+
+    biaya_acuan = biaya_kombinasi(acuan)
+    hasil["selisih_biaya"] = hasil["biaya_juta"] - hasil.set_index(["lipatan", "seed"]).index.map(biaya_acuan)
+    ringkas = hasil.groupby(kunci, sort=False).agg(
+        biaya_juta=("biaya_juta", "mean"), selisih_biaya=("selisih_biaya", "mean"),
+        galat_baku=("selisih_biaya", lambda s: s.std() / np.sqrt(len(s))),
+        n_tandai=("n_tandai", "mean"), pr_auc=("pr_auc", "mean"), log_loss=("log_loss", "mean"),
+        brier=("brier", "mean"), ece=("ece", "mean"), rasio_rata2=("rasio_rata2", "mean"),
+    ).reset_index()
+    ringkas.to_csv(HASIL_DIR / "t2_kalibrasi_ringkas.csv", index=False)
+    with pd.option_context("display.width", 250, "display.max_colwidth", 48):
+        print(f"\nRingkasan (rata-rata per lipatan validasi; biaya dalam juta Rp; selisih terhadap "
+              f"'{' | '.join(acuan)}', berpasangan):")
+        print(ringkas.to_string(index=False, float_format=FMT))
+
+    # ---- Aturan pemilihan (ditetapkan sebelum melihat hasil) ----
+    # Hanya kombinasi yang memakai aturan soal (tandai bila prob x nominal > 25.000 pada kolom prob yang
+    # dikumpulkan), supaya prob dan tandai konsisten. Pilih biaya rata-rata terendah; kombinasi yang selisih
+    # biayanya terhadap yang termurah < 1 galat baku berpasangan dianggap setara, lalu dipilih yang paling
+    # sederhana (urutan: model, pendekatan, kalibrasi seperti URUTAN_*).
+    calon = ringkas[ringkas["aturan"] == ATURAN_SOAL].copy()
+    termurah = calon.loc[calon["biaya_juta"].idxmin()]
+    b_termurah = biaya_kombinasi(termurah[kunci].tolist())
+    setara = []
+    for _, r in calon.iterrows():
+        b = biaya_kombinasi(r[kunci].tolist())
+        d = b - b_termurah
+        if d.mean() <= d.std() / np.sqrt(len(d)):
+            setara.append(r)
+    setara = pd.DataFrame(setara)
+    setara["urut"] = (setara["model"].map(URUTAN_MODEL.index) * 100 + setara["pendekatan"].map(URUTAN_PENDEKATAN.index) * 10
+                      + setara["kalibrasi"].map(URUTAN_KALIBRASI.index))
+    pilihan = setara.sort_values("urut").iloc[0]
+
+    def nama(r):
+        return f"{r['model']} | {r['pendekatan']} | {r['kalibrasi']}"
+    print(f"\nTermurah: {nama(termurah)} (biaya {termurah['biaya_juta']:.2f} jt)")
+    print("Setara (< 1 galat baku dari termurah): " + "; ".join(nama(r) for _, r in setara.iterrows()))
+    print(f"PILIHAN (paling sederhana di antara yang setara): {nama(pilihan)} "
+          f"-> biaya {pilihan['biaya_juta']:.2f} jt, PR-AUC {pilihan['pr_auc']:.4f}, rasio_rata2 {pilihan['rasio_rata2']:.3f}")
+    pd.DataFrame([pilihan[kunci + ["biaya_juta", "pr_auc", "rasio_rata2"]]]).to_csv(
+        HASIL_DIR / "t2_kalibrasi_pilihan.csv", index=False)
+
+    # ---- Koefisien Platt dan ambang dari periode kalibrasi ----
+    print("\nPlatt logit(q) = a x logit(p) + b dan ambang k dari periode kalibrasi (rata-rata seed):")
+    print(platt.groupby(["model", "lipatan"])[["a", "b", "k_dari_kalibrasi", "rasio_rata2_kalibrasi"]]
+          .mean().to_string(float_format=FMT))
+
+    # ---- Diagram reliabilitas (model dasar, pendekatan b, seed pertama, 4 lipatan digabung) ----
+    rel = pd.concat(rel)
+    tabel_rel = pd.concat([pd.DataFrame(tabel_reliabilitas(g["y"], g["p"])).assign(kalibrasi=kn)
+                           for kn, g in rel.groupby("kalibrasi", sort=False)])
+    tabel_rel.to_csv(HASIL_DIR / "t2_reliabilitas.csv", index=False)
+    print("\nDiagram reliabilitas (dasar, pendekatan b, seed pertama; janji = prob_rata2, kenyataan = tingkat_fraud):")
+    print(tabel_rel.to_string(index=False, float_format=FMT))
+    fig, ax = plt.subplots(figsize=(5.5, 5))
+    for kn, g in tabel_rel.groupby("kalibrasi", sort=False):
+        g = g[g["transaksi"] >= 50]
+        ax.plot(g["prob_rata2"], g["tingkat_fraud"].clip(lower=1e-5), marker="o", label=kn)
+    ax.plot([1e-5, 1], [1e-5, 1], color="grey", ls="--", lw=1, label="sempurna")
+    ax.set_xscale("log"); ax.set_yscale("log")
+    ax.axvspan(0.005, 0.3, color="orange", alpha=0.08, label="wilayah keputusan")
+    ax.set_xlabel("probabilitas yang diberikan model (rata-rata kelompok)")
+    ax.set_ylabel("tingkat fraud sebenarnya")
+    ax.set_title("Diagram reliabilitas (validasi, 4 lipatan)")
+    ax.legend(fontsize=8)
+    fig.tight_layout()
+    fig.savefig(HASIL_DIR / "t2_reliabilitas.png", dpi=150)
+    plt.close(fig)
+    print("\nBaca hasilnya: aturan prob x nominal > 25.000 berasal dari perbandingan biaya pasti menandai\n"
+          "(Rp 25.000) dengan biaya harapan tidak menandai (prob x nominal); aturan ini hanya optimal bila prob\n"
+          "jujur. 'Ambang terbaik di validasi' memakai label validasi sendiri, jadi hanya batas bawah biaya.\n"
+          "Skor ini hasil pengembangan pada lipatan yang juga dipakai memilih, bukan evaluasi akhir independen.")
+
+
+# --------------------------------------------------------------------------
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Task 2 (klasifikasi fraud)")
     parser.add_argument("--berkas", default="klasifikasi_train.csv.gz",
                         help="nama berkas di folder data/")
     parser.add_argument("--berkas-uji", default="klasifikasi_test.csv.gz",
                         help="nama berkas data uji di folder data/ (untuk riwayat fitur)")
-    parser.add_argument("--tahap", choices=["audit", "validasi", "fitur", "imbalance", "shift", "semua"],
+    parser.add_argument("--tahap", choices=["audit", "validasi", "fitur", "imbalance", "shift", "kalibrasi",
+                                            "semua"],
                         default="semua")
     args = parser.parse_args(argv)
 
@@ -1141,17 +1324,19 @@ def main(argv=None):
         uji_kebocoran(df, df_bersih)
     if args.tahap in ("validasi", "semua"):
         validasi(df_bersih)
-    if args.tahap in ("fitur", "imbalance", "shift", "semua"):
+    if args.tahap in ("fitur", "imbalance", "shift", "kalibrasi", "semua"):
         gab, dm, lipatan, dasar = siapkan_data(df, muat_data(args.berkas_uji))
         if args.tahap in ("fitur", "semua"):
             evaluasi_fitur(gab, dm, lipatan, dasar)
-        if args.tahap in ("imbalance", "shift", "semua"):
+        if args.tahap in ("imbalance", "shift", "kalibrasi", "semua"):
             eks = Eksperimen(gab, dm, susun_fitur(dasar, KELOMPOK_TERPILIH),
                              [SEED + k for k in range(N_SEED_PR4)])
             if args.tahap in ("imbalance", "semua"):
                 kelas_tidak_seimbang(eks, lipatan)
             if args.tahap in ("shift", "semua"):
                 pergeseran_pola(eks, lipatan)
+            if args.tahap in ("kalibrasi", "semua"):
+                kalibrasi_biaya(eks, lipatan)
     print(f"\nTabel dan gambar tersimpan di: {HASIL_DIR}")
 
 

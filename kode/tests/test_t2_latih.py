@@ -7,8 +7,60 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from t2_latih import (bobot_nominal, bobot_waktu, biaya, koreksi_sampel_kurang, metrik_lengkap,
-                      rasio_sah_fraud, sampel_kurang, tandai_aturan)
+from t2_latih import (bobot_nominal, bobot_waktu, biaya, ece, kalibrasi_isotonik, kalibrasi_platt,
+                      koreksi_sampel_kurang, metrik_lengkap, pilih_ambang, rasio_sah_fraud,
+                      sampel_kurang, tabel_reliabilitas, tandai_aturan)
+
+
+def _data_terdistorsi(n, seed):
+    """Peluang fraud sebenarnya p, skor model s yang 'terlalu rendah hati': logit(s) = (logit(p) - 1) / 1,5."""
+    rng = np.random.default_rng(seed)
+    logit_p = rng.normal(-5, 1.5, n)
+    p = 1 / (1 + np.exp(-logit_p))
+    y = (rng.random(n) < p).astype(int)
+    s = 1 / (1 + np.exp(-(logit_p - 1) / 1.5))
+    return p, s, y
+
+
+def test_platt_memulihkan_distorsi_logit():
+    """Distorsi berbentuk logit linear harus dipulihkan Platt: a = 1,5 dan b = 1."""
+    p, s, y = _data_terdistorsi(400_000, 0)
+    ubah, (a, b) = kalibrasi_platt(s, y)
+    assert a == pytest.approx(1.5, abs=0.05) and b == pytest.approx(1.0, abs=0.15)
+    assert ubah(s).mean() == pytest.approx(y.mean(), rel=0.05)
+    assert (np.diff(ubah(np.sort(s))) >= 0).all()          # urutan tetap
+
+
+def test_isotonik_naik_dan_menjaga_urutan():
+    p, s, y = _data_terdistorsi(100_000, 1)
+    ubah = kalibrasi_isotonik(s, y)
+    q = ubah(np.unique(s))
+    assert (np.diff(q) > 0).all()                           # pemecah seri: naik tegas, urutan asli terjaga
+    assert ((q >= 0) & (q <= 1)).all()
+    assert ece(y, ubah(s)) < ece(y, s)                      # lebih jujur daripada skor mentah
+
+
+def test_pilih_ambang_menemukan_ambang_25000_bila_prob_jujur():
+    """Bila prob sudah peluang sebenarnya, ambang biaya terbaik dekat 25.000 (aturan soal)."""
+    rng = np.random.default_rng(2)
+    n = 300_000
+    p = rng.beta(0.3, 30, n)
+    y = (rng.random(n) < p).astype(int)
+    nominal = rng.lognormal(12, 1.2, n)
+    k, b = pilih_ambang(p, nominal, y)
+    assert 15_000 < k < 40_000
+    assert b <= biaya(y, nominal, tandai_aturan(p, nominal)) + 1e-6
+    # nilai biaya pada aturan 25.000 tidak jauh dari biaya terbaik
+    assert biaya(y, nominal, tandai_aturan(p, nominal)) < 1.02 * b
+
+
+def test_ece_dan_tabel_reliabilitas():
+    p, s, y = _data_terdistorsi(200_000, 3)
+    assert ece(y, p) < 0.0015                               # peluang sebenarnya: hanya derau sampel
+    assert ece(y, s) > 5 * ece(y, p)
+    tabel = tabel_reliabilitas(y, p)
+    assert sum(b["transaksi"] for b in tabel) == len(y)
+    assert sum(b["fraud"] for b in tabel) == y.sum()
 
 
 def test_sampel_kurang_menyimpan_semua_fraud():

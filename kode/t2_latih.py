@@ -75,8 +75,94 @@ def biaya(y, nominal, tandai, biaya_tandai=BIAYA_TANDAI):
 
 
 def tandai_aturan(prob, nominal, biaya_tandai=BIAYA_TANDAI):
-    """Aturan keputusan soal: tandai bila prob x nominal > biaya_tandai."""
+    """Aturan keputusan soal: tandai bila prob x nominal > biaya_tandai.
+
+    Asal aturan: untuk satu transaksi dengan peluang fraud p dan nominal N,
+      - menandai   -> biaya pasti 25.000 (fraud yang ditandai tertahan tanpa kerugian),
+      - tidak      -> biaya harapan p x N (rugi N bila ternyata fraud, 0 bila sah).
+    Tandai bila p x N > 25.000. Aturan ini hanya meminimalkan biaya bila p adalah peluang sebenarnya
+    (terkalibrasi); bila p terlalu kecil, fraud bernilai besar ikut lolos.
+    Contoh: N = Rp 500.000 -> ditandai bila p > 0,05; N = Rp 5 juta -> bila p > 0,005.
+    """
     return np.asarray(prob) * np.asarray(nominal, dtype=float) > biaya_tandai
+
+
+# --------------------------------------------------------------------------
+# Kalibrasi probabilitas (PR 5)
+# --------------------------------------------------------------------------
+# Tepi kelompok untuk diagram reliabilitas dan ECE. Probabilitas fraud hampir selalu kecil, jadi
+# kelompok dibuat rapat di bawah (skala log); wilayah 0,005-0,3 adalah wilayah keputusan
+# (ambang 25.000 / nominal untuk nominal Rp 80 ribu - Rp 5 juta).
+TEPI_RELIABILITAS = np.array([0, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0])
+
+
+def _logit(p):
+    p = np.clip(np.asarray(p, dtype=float), 1e-7, 1 - 1e-7)
+    return np.log(p / (1 - p))
+
+
+def kalibrasi_platt(p_kal, y_kal):
+    """Platt: regresi logistik logit(q) = a x logit(p) + b, dipelajari di periode kalibrasi.
+
+    Mengembalikan (fungsi pengubah, (a, b)). Urutan skor tidak berubah (a > 0), jadi PR-AUC tetap.
+    """
+    from sklearn.linear_model import LogisticRegression
+    model = LogisticRegression(C=np.inf, max_iter=1000)   # tanpa regularisasi
+    model.fit(_logit(p_kal).reshape(-1, 1), np.asarray(y_kal))
+    a, b = float(model.coef_[0, 0]), float(model.intercept_[0])
+    return (lambda p: 1 / (1 + np.exp(-(a * _logit(p) + b)))), (a, b)
+
+
+def kalibrasi_isotonik(p_kal, y_kal):
+    """Isotonik: fungsi tangga naik bebas bentuk, dipelajari di periode kalibrasi.
+
+    Tangga membuat banyak skor bernilai sama dan bisa menurunkan PR-AUC; karena itu dicampur sedikit
+    dengan skor asli, q = (1 - 1e-6) x tangga + 1e-6 x p, supaya urutan asli sebagian besar terjaga.
+    Keterbatasan: untuk skor sangat dekat 1 (selisih antar-skor < 1e-10) presisi angka komputer tidak
+    cukup membedakannya, jadi sebagian skor teratas tetap seri dan PR-AUC bisa turun sedikit.
+    """
+    from sklearn.isotonic import IsotonicRegression
+    model = IsotonicRegression(y_min=0, y_max=1, out_of_bounds="clip")
+    model.fit(np.asarray(p_kal, dtype=float), np.asarray(y_kal, dtype=float))
+    eps = 1e-6
+    return lambda p: (1 - eps) * model.predict(np.asarray(p, dtype=float)) + eps * np.asarray(p, dtype=float)
+
+
+def pilih_ambang(prob, nominal, y, grid=None, biaya_tandai=BIAYA_TANDAI):
+    """Ambang k yang meminimalkan biaya untuk aturan prob x nominal > k (dicari pada grid log).
+
+    Dipakai sebagai pembanding kalibrasi: bila dipilih di periode kalibrasi, ini cara langsung
+    menyetel keputusan tanpa memperbaiki probabilitas. Mengembalikan (k terbaik, biaya pada k itu).
+    """
+    grid = np.geomspace(1e3, 1e7, 161) if grid is None else grid
+    skor = np.asarray(prob, dtype=float) * np.asarray(nominal, dtype=float)
+    hasil = [biaya(y, nominal, skor > k, biaya_tandai) for k in grid]
+    i = int(np.argmin(hasil))
+    return float(grid[i]), float(hasil[i])
+
+
+def ece(y, prob, tepi=TEPI_RELIABILITAS):
+    """Expected calibration error: rata-rata berbobot |rata-rata prob - tingkat fraud| per kelompok."""
+    y, prob = np.asarray(y, dtype=float), np.asarray(prob, dtype=float)
+    kelompok = np.clip(np.digitize(prob, tepi[1:-1]), 0, len(tepi) - 2)
+    total = 0.0
+    for g in np.unique(kelompok):
+        pilih = kelompok == g
+        total += pilih.mean() * abs(prob[pilih].mean() - y[pilih].mean())
+    return total
+
+
+def tabel_reliabilitas(y, prob, tepi=TEPI_RELIABILITAS):
+    """Per kelompok probabilitas: jumlah transaksi, rata-rata prob (janji), dan tingkat fraud (kenyataan)."""
+    y, prob = np.asarray(y, dtype=float), np.asarray(prob, dtype=float)
+    kelompok = np.clip(np.digitize(prob, tepi[1:-1]), 0, len(tepi) - 2)
+    baris = []
+    for g in np.unique(kelompok):
+        pilih = kelompok == g
+        baris.append({"kelompok": f"{tepi[g]:g}-{tepi[g + 1]:g}", "transaksi": int(pilih.sum()),
+                      "fraud": int(y[pilih].sum()), "prob_rata2": prob[pilih].mean(),
+                      "tingkat_fraud": y[pilih].mean()})
+    return baris
 
 
 def metrik_lengkap(y, prob, nominal, tandai=None):
@@ -94,6 +180,7 @@ def metrik_lengkap(y, prob, nominal, tandai=None):
         "log_loss": log_loss(y, prob, labels=[0, 1]),
         "brier": brier_score_loss(y, prob),
         "rasio_rata2": prob.mean() / y.mean(),
+        "ece": ece(y, prob),
         "n_tandai": int(np.sum(tandai)),
         "biaya_juta": biaya(y, nominal, tandai) / 1e6,
     }
