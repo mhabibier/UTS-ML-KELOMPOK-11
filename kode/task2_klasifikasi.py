@@ -38,6 +38,13 @@ Tahap kalibrasi (PR 5):
       biaya aturan prob x nominal > 25.000 vs tidak menandai / menandai semua / ambang lain,
       diagram reliabilitas, dan pemilihan kombinasi dengan aturan tetap.
 
+Tahap analisis dan final (PR 6):
+  15. analisis error kombinasi terpilih: fraud lolos, salah tandai, kontribusi biaya per kanal, kategori
+      merchant, rentang nominal, dan pola fraud; 10 fraud lolos termahal,
+  16. tingkat fraud per bulan x kanal / kategori merchant, pentingnya fitur model Jan-Mar vs Apr-Jun,
+  17. model final (data < 11 Agt) + Platt (model < 14 Jul, dinilai 14 Jul - 10 Agt) ->
+      prediksi_klasifikasi.csv di akar repo (id_transaksi,prob,tandai), lalu cek format.
+
 Cara menjalankan dari akar repo:
     python kode/task2_klasifikasi.py                    # semua tahap
     python kode/task2_klasifikasi.py --tahap validasi   # hanya validasi
@@ -45,10 +52,13 @@ Cara menjalankan dari akar repo:
     python kode/task2_klasifikasi.py --tahap imbalance  # hanya kelas tidak seimbang (PR 4)
     python kode/task2_klasifikasi.py --tahap shift      # hanya pergeseran pola (PR 4)
     python kode/task2_klasifikasi.py --tahap kalibrasi  # hanya kalibrasi dan biaya (PR 5)
+    python kode/task2_klasifikasi.py --tahap analisis   # hanya analisis error dan pergeseran (PR 6)
+    python kode/task2_klasifikasi.py --tahap final      # hanya model final + prediksi_klasifikasi.csv
 
 Semua tabel dan gambar ditulis ke kode/hasil/.
 """
 import argparse
+import time
 
 import matplotlib
 
@@ -67,14 +77,14 @@ from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from t2_data import (BATAS_LABEL_MATANG, FITUR_DIKECUALIKAN, HASIL_DIR, KOLOM_BINER,
-                     KOLOM_DIPANTAU, KOLOM_ID, KOLOM_KATEGORI, SEED, TARGET,
+                     KOLOM_DIPANTAU, KOLOM_ID, KOLOM_KATEGORI, ROOT, SEED, TARGET,
                      bersihkan_kategori, buat_lipatan_waktu, data_matang,
                      fitur_model, muat_data, ringkas_lipatan, tambah_kolom, matriks_lgbm)
 from t2_fitur import (KELOMPOK_FITUR, KELOMPOK_TERPILIH, fitur_label, fitur_statis,
                       gabung_latih_uji, susun_fitur)
 from t2_latih import (BIAYA_TANDAI, biaya, bobot_nominal, bobot_waktu, kalibrasi_isotonik,
                       kalibrasi_platt, koreksi_sampel_kurang, metrik_lengkap, pilih_ambang,
-                      rasio_sah_fraud, sampel_kurang, tabel_reliabilitas)
+                      rasio_sah_fraud, sampel_kurang, tabel_reliabilitas, tandai_aturan)
 
 # Banyaknya seed untuk mengukur derau satu kali latih: SEED, SEED+1, ..., SEED+4
 N_SEED_ULANG = 5
@@ -1300,6 +1310,226 @@ def kalibrasi_biaya(eks, lipatan):
 
 
 # --------------------------------------------------------------------------
+# 15-17. Analisis error, pelengkap pergeseran pola, dan model final (PR 6)
+# --------------------------------------------------------------------------
+def prob_terpilih(eks, lk, lp, seed=SEED):
+    """Kombinasi terpilih di bagian 14 untuk satu lipatan: model dasar dilatih ulang sampai awal jeda
+    (pendekatan b), lalu Platt yang dipelajari dari model sebelum periode kalibrasi (pendekatan a).
+
+    Mengembalikan (baris validasi, prob terkalibrasi, prob mentah, koefisien Platt).
+    """
+    data_a = pd.concat([eks.dm, eks.label(lk.batas_latih).loc[eks.dm.index]], axis=1)
+    (p_kal,) = _prob_kandidat(URUTAN_MODEL[0], data_a.loc[lk.idx_latih], [data_a.loc[lk.idx_kalibrasi]],
+                              eks.fitur, seed, lp.nomor)
+    f_platt, ab = kalibrasi_platt(p_kal, data_a.loc[lk.idx_kalibrasi, TARGET].to_numpy())
+    latih_b, valid_b = eks.data_lipatan(lp)
+    (p_vb,) = _prob_kandidat(URUTAN_MODEL[0], latih_b, [valid_b], eks.fitur, seed, lp.nomor)
+    return valid_b, f_platt(p_vb), p_vb, ab
+
+
+def _pola_fraud(df):
+    """Penanda pola (boleh tumpang tindih). Ambang dipilih dari sebaran data latih matang:
+    contoh, tingkat fraud 0,4% bila trx_1j = 0 tetapi 11-100% bila trx_1j >= 1."""
+    kecil = df["nominal"] < 128_300   # median nominal data latih
+    return {
+        "rentetan cepat (trx_1j >= 1)": df["trx_1j"] >= 1,
+        "rentetan kecil cepat (trx_1j >= 1, nominal < median)": (df["trx_1j"] >= 1) & kecil,
+        "tanda pengambilalihan akun (ganti password 7h / gagal login 24j)":
+            (df["ganti_password_7h"] >= 1) | (df["gagal_login_24j"] >= 1),
+        "perangkat baru": df["perangkat_baru"] == 1,
+        "negara IP berbeda": df["negara_ip_beda"] == 1,
+        "kartu tidak hadir": df["kartu_tidak_hadir"] == 1,
+        "transaksi pertama pengguna (tanpa riwayat)": df["menit_sejak_trx_terakhir"].isna(),
+        "merchant kecil (< 50 trx sebelumnya)": df["jumlah_trx_merchant_sebelum"] < 50,
+        "kanal QRIS": df["kanal"].astype(str) == "qris",
+        "nominal besar (> Rp 2 juta)": df["nominal"] > 2_000_000,
+    }
+
+
+def _rincian(df, grup):
+    """Per kelompok: fraud tertangkap/lolos, salah tandai, dan kontribusi biaya (juta Rp)."""
+    y, t, n = df[TARGET] == 1, df["tandai"] == 1, df["nominal"]
+    d = pd.DataFrame({"grup": grup, "transaksi": 1, "fraud": y, "tertangkap": y & t, "lolos": y & ~t,
+                      "salah_tandai": ~y & t, "ditandai": t, "nominal_fraud": n.where(y, 0),
+                      "nominal_tertangkap": n.where(y & t, 0), "nominal_lolos": n.where(y & ~t, 0)})
+    g = d.groupby("grup", observed=True).sum()
+    g["recall"] = g["tertangkap"] / g["fraud"]
+    g["recall_nominal"] = g["nominal_tertangkap"] / g["nominal_fraud"]
+    g["presisi"] = g["tertangkap"] / g["ditandai"]
+    g["biaya_lolos_juta"] = g["nominal_lolos"] / 1e6
+    g["biaya_tandai_juta"] = BIAYA_TANDAI * g["ditandai"] / 1e6
+    g["biaya_juta"] = g["biaya_lolos_juta"] + g["biaya_tandai_juta"]
+    total = BIAYA_TANDAI * t.sum() / 1e6 + n.where(y & ~t, 0).sum() / 1e6
+    g["porsi_biaya"] = g["biaya_juta"] / total
+    return g[["transaksi", "fraud", "tertangkap", "lolos", "salah_tandai", "recall", "recall_nominal",
+              "presisi", "biaya_lolos_juta", "biaya_tandai_juta", "biaya_juta", "porsi_biaya"]]
+
+
+def analisis_error(eks, lipatan):
+    """15. Fraud yang lolos, salah tandai, dan kontribusi biaya per kanal, kategori merchant, dan pola."""
+    print(f"\n=== 15. ANALISIS ERROR (kombinasi terpilih, seed {SEED}, validasi {len(lipatan)} lipatan digabung) ===")
+    lip_kal = buat_lipatan_waktu(eks.dm, panjang_kalibrasi_hari=PANJANG_KALIBRASI_HARI)
+    bagian = []
+    for lk, lp in zip(lip_kal, lipatan):
+        valid, q, _, _ = prob_terpilih(eks, lk, lp)
+        bagian.append(valid.assign(prob=q, tandai=tandai_aturan(q, valid["nominal"]).astype(int), lipatan=lp.nomor))
+    v = pd.concat(bagian)
+    y, t = v[TARGET] == 1, v["tandai"] == 1
+    hasil = np.select([y & t, y & ~t, ~y & t], ["fraud tertangkap", "fraud lolos", "salah tandai"], "sah dilewati")
+    umum = _rincian(v, pd.Series("semua", index=v.index))
+    per_lip = _rincian(v, v["lipatan"])
+    print("Ringkasan keseluruhan (4 lipatan x 4 minggu; biaya juta Rp):")
+    print(pd.concat([umum, per_lip]).to_string(float_format=FMT))
+    print(pd.Series(hasil).value_counts().to_string())
+
+    tabel = {"kanal": _rincian(v, v["kanal"].astype(str)),
+             "kategori_merchant": _rincian(v, v["kategori_merchant"].astype(str)).sort_values("biaya_juta", ascending=False),
+             "nominal": _rincian(v, pd.cut(v["nominal"], [0, 50e3, 150e3, 500e3, 2e6, np.inf],
+                                           labels=["< 50 rb", "50-150 rb", "150-500 rb", "0,5-2 jt", "> 2 jt"]))}
+    pola = []
+    for nama, pilih in _pola_fraud(v).items():
+        pola.append(_rincian(v[pilih], pd.Series(nama, index=v.index[pilih])))
+    tabel["pola"] = pd.concat(pola).sort_values("biaya_juta", ascending=False)
+    with pd.option_context("display.width", 250):
+        for nama, tb in tabel.items():
+            tb.to_csv(HASIL_DIR / f"t2_error_per_{nama}.csv")
+            print(f"\nPer {nama}:")
+            print(tb.to_string(float_format=FMT))
+    print("Catatan: pola boleh tumpang tindih, jadi porsi biaya per pola tidak berjumlah 1.")
+
+    lolos = v[y & ~t].assign(prob_x_nominal=lambda d: d["prob"] * d["nominal"])
+    kolom = ["lipatan", "waktu", "kanal", "kategori_merchant", "nominal", "prob", "prob_x_nominal", "trx_1j",
+             "perangkat_baru", "gagal_login_24j", "ganti_password_7h", "jumlah_trx_merchant_sebelum",
+             "menit_sejak_trx_terakhir"]
+    termahal = lolos.nlargest(10, "nominal")[kolom]
+    termahal.to_csv(HASIL_DIR / "t2_error_lolos_termahal.csv", index=False)
+    with pd.option_context("display.width", 250):
+        print("\n10 fraud lolos termahal:")
+        print(termahal.to_string(index=False, float_format=FMT))
+    salah = v[~y & t]
+    print(f"\nSalah tandai: {len(salah):,} transaksi sah (biaya {BIAYA_TANDAI * len(salah) / 1e6:.2f} jt); "
+          f"median nominal {salah['nominal'].median():,.0f}, median prob {salah['prob'].median():.3f}")
+    print(f"Fraud lolos: {int((y & ~t).sum()):,} dari {int(y.sum()):,}; nominal lolos {lolos['nominal'].sum() / 1e6:.2f} jt, "
+          f"{(lolos['nominal'] < BIAYA_TANDAI / 0.5).mean():.0%} bernominal < Rp 50 rb "
+          f"(tidak layak ditandai kecuali prob > 0,5)")
+
+
+def pergeseran_pelengkap(eks):
+    """16. Tingkat fraud per bulan x kanal / kategori merchant, dan pentingnya fitur antarperiode."""
+    print("\n=== 16. PELENGKAP PERGESERAN POLA ===")
+    dm = eks.dm.assign(bulan=eks.dm["waktu"].dt.to_period("M").astype(str))
+    kanal = dm.pivot_table(index="kanal", columns="bulan", values=TARGET, aggfunc="mean", observed=True)
+    kanal.to_csv(HASIL_DIR / "t2_fraud_bulan_kanal.csv")
+    teratas = dm.loc[dm[TARGET] == 1, "kategori_merchant"].astype(str).value_counts().head(8).index
+    kat = dm.assign(kategori=dm["kategori_merchant"].astype(str).where(
+        dm["kategori_merchant"].astype(str).isin(teratas), "lainnya"))
+    kat = kat.pivot_table(index="kategori", columns="bulan", values=TARGET, aggfunc="mean", observed=True)
+    kat.to_csv(HASIL_DIR / "t2_fraud_bulan_kategori.csv")
+    print("Tingkat fraud per bulan x kanal (data matang; Agt = 1-10 Agt):")
+    print(kanal.to_string(float_format=FMT))
+    print("\nTingkat fraud per bulan x kategori merchant (8 kategori dengan fraud terbanyak):")
+    print(kat.to_string(float_format=FMT))
+
+    fig, ax = plt.subplots(figsize=(8, 3.5))
+    for k, baris in kanal.iterrows():
+        ax.plot(baris.index, baris.values * 100, marker="o", label=k)
+    ax.set_ylabel("tingkat fraud (%)")
+    ax.set_title("Tingkat fraud per bulan menurut kanal (data matang)")
+    ax.legend(fontsize=8, ncol=5)
+    fig.tight_layout()
+    fig.savefig(HASIL_DIR / "t2_fraud_bulan_kanal.png", dpi=150)
+    plt.close(fig)
+
+    # Pentingnya fitur antarperiode: model Jan-Mar vs model Apr-Jun (tidak tumpang tindih, label matang)
+    periode = {"Jan-Mar": ("2025-01-01", "2025-04-01"), "Apr-Jun": ("2025-04-01", "2025-07-01")}
+    gain = {}
+    for nama, (mulai, akhir) in periode.items():
+        data = pd.concat([eks.dm, eks.label(pd.Timestamp(akhir)).loc[eks.dm.index]], axis=1)
+        latih = data[(data["waktu"] >= mulai) & (data["waktu"] < akhir)]
+        g = latih_lgbm(latih, eks.fitur, SEED).booster_.feature_importance(importance_type="gain")
+        gain[nama] = pd.Series(g / g.sum(), index=eks.fitur)
+    gain = pd.DataFrame(gain)
+    for nama in periode:
+        gain[f"peringkat_{nama}"] = gain[nama].rank(ascending=False).astype(int)
+    gain["selisih"] = gain["Apr-Jun"] - gain["Jan-Mar"]
+    gain = gain.sort_values("Apr-Jun", ascending=False)
+    gain.to_csv(HASIL_DIR / "t2_pentingnya_antarperiode.csv", index_label="fitur")
+    rho = gain["Jan-Mar"].rank().corr(gain["Apr-Jun"].rank())
+    print(f"\nPentingnya fitur (porsi gain) model Jan-Mar vs Apr-Jun; korelasi peringkat Spearman = {rho:.3f}")
+    print(gain.head(15).to_string(float_format=FMT))
+    print("\nPerubahan terbesar:")
+    print(gain.reindex(gain["selisih"].abs().sort_values(ascending=False).index).head(8)
+          [["Jan-Mar", "Apr-Jun", "selisih"]].to_string(float_format=FMT))
+
+
+def model_final(eks):
+    """17. Model final, kalibrasi, aturan biaya, dan prediksi_klasifikasi.csv.
+
+    Susunannya sama persis dengan kombinasi terpilih di validasi (bagian 14), digeser ke akhir data:
+      - model akhir: semua transaksi sebelum 11 Agt 2025 (label matang), fitur berlabel batas 11 Agt;
+      - Platt: dari model yang dilatih sebelum 14 Jul (= 11 Agt - 28 hari), dinilai pada 14 Jul - 10 Agt;
+      - data uji 1 Sep - 31 Okt berjarak 21 hari dari akhir data latih, sama dengan jeda di validasi.
+    """
+    print(f"\n=== 17. MODEL FINAL DAN prediksi_klasifikasi.csv (SEED = {SEED}) ===")
+    batas = BATAS_LABEL_MATANG
+    mulai_kal = batas - pd.Timedelta(days=PANJANG_KALIBRASI_HARI)
+    gab = eks.gab
+    data_a = pd.concat([gab, eks.label(mulai_kal)], axis=1)
+    latih_a = data_a[(data_a["sumber"] == "latih") & (data_a["waktu"] < mulai_kal)]
+    kal = data_a[(data_a["sumber"] == "latih") & (data_a["waktu"] >= mulai_kal) & (data_a["waktu"] < batas)]
+    (p_kal,) = _prob_kandidat(URUTAN_MODEL[0], latih_a, [kal], eks.fitur, SEED, 0)
+    f_platt, (a, b) = kalibrasi_platt(p_kal, kal[TARGET].to_numpy())
+
+    data = pd.concat([gab, eks.label(batas)], axis=1)
+    latih = data[(data["sumber"] == "latih") & (data["waktu"] < batas)]
+    uji = data[data["sumber"] == "uji"]
+    (p_uji,) = _prob_kandidat(URUTAN_MODEL[0], latih, [uji], eks.fitur, SEED, 0)
+    prob = np.clip(f_platt(p_uji), 0, 1)
+    tandai = tandai_aturan(prob, uji["nominal"]).astype(int)
+
+    jeda = (uji["waktu"].min() - latih["waktu"].max()).days
+    print(f"Model akhir : {len(latih):,} transaksi ({int(latih[TARGET].sum()):,} fraud), "
+          f"{latih['waktu'].min().date()} s.d. {latih['waktu'].max().date()}, {len(eks.fitur)} fitur")
+    print(f"Platt       : model < {mulai_kal.date()} ({len(latih_a):,} transaksi), dinilai pada "
+          f"{len(kal):,} transaksi {mulai_kal.date()} s.d. {(batas - pd.Timedelta(days=1)).date()}; "
+          f"logit(q) = {a:.3f} x logit(p) + {b:.3f}")
+    print(f"Data uji    : {len(uji):,} transaksi, {uji['waktu'].min().date()} s.d. {uji['waktu'].max().date()} "
+          f"(jeda {jeda} hari dari akhir data latih)")
+
+    keluaran = pd.DataFrame({"id_transaksi": uji["id_transaksi"].to_numpy(), "prob": prob, "tandai": tandai})
+    jalur = ROOT / "prediksi_klasifikasi.csv"
+    keluaran.to_csv(jalur, index=False)
+    print(f"Ditulis     : {jalur} ({len(keluaran):,} baris)")
+
+    nominal = uji["nominal"].to_numpy()
+    harapan = np.minimum(BIAYA_TANDAI, prob * nominal)   # biaya harapan per transaksi bila prob jujur
+    ringkas = pd.DataFrame([{
+        "transaksi": len(uji), "ditandai": int(tandai.sum()), "persen_ditandai": tandai.mean(),
+        "prob_rata2": prob.mean(), "prob_mentah_rata2": p_uji.mean(),
+        "tingkat_fraud_latih": latih[TARGET].mean(), "platt_a": a, "platt_b": b,
+        "perkiraan_biaya_juta": harapan.sum() / 1e6,
+        "perkiraan_fraud": prob.sum(),
+    }])
+    ringkas.to_csv(HASIL_DIR / "t2_final_ringkas.csv", index=False)
+    print("\nRingkasan prediksi (perkiraan biaya = jumlah min(25.000, prob x nominal), sahih HANYA bila prob jujur;")
+    print("label data uji tidak tersedia, jadi ini bukan biaya sebenarnya):")
+    print(ringkas.T.to_string(header=False, float_format=lambda x: f"{x:,.4f}"))
+    minggu = pd.DataFrame({"minggu": uji["waktu"].dt.to_period("W-SUN").dt.start_time.to_numpy(),
+                           "prob": prob, "tandai": tandai})
+    per_minggu = minggu.groupby("minggu").agg(transaksi=("prob", "size"), prob_rata2=("prob", "mean"),
+                                              ditandai=("tandai", "sum"))
+    per_minggu.to_csv(HASIL_DIR / "t2_final_per_minggu.csv")
+    print("\nPer minggu data uji:")
+    print(per_minggu.to_string(float_format=FMT))
+
+    from cek_format import cek_klasifikasi
+    masalah = cek_klasifikasi(keluaran, uji["id_transaksi"])
+    print("\nCek format prediksi_klasifikasi.csv: " + ("LOLOS" if not masalah else "GAGAL: " + "; ".join(masalah)))
+    if masalah:
+        raise SystemExit(1)
+
+
+# --------------------------------------------------------------------------
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Task 2 (klasifikasi fraud)")
     parser.add_argument("--berkas", default="klasifikasi_train.csv.gz",
@@ -1307,37 +1537,52 @@ def main(argv=None):
     parser.add_argument("--berkas-uji", default="klasifikasi_test.csv.gz",
                         help="nama berkas data uji di folder data/ (untuk riwayat fitur)")
     parser.add_argument("--tahap", choices=["audit", "validasi", "fitur", "imbalance", "shift", "kalibrasi",
-                                            "semua"],
+                                            "analisis", "final", "semua"],
                         default="semua")
     args = parser.parse_args(argv)
 
     HASIL_DIR.mkdir(parents=True, exist_ok=True)
     np.random.seed(SEED)
 
+    mulai_total = time.perf_counter()
+    waktu_tahap = {}
+
+    def jalankan(nama, fungsi, *argumen):
+        mulai = time.perf_counter()
+        fungsi(*argumen)
+        waktu_tahap[nama] = waktu_tahap.get(nama, 0) + (time.perf_counter() - mulai) / 60
+
     df = muat_data(args.berkas)
     df_bersih = bersihkan_kategori(df)
     if args.tahap in ("audit", "semua"):
-        audit_kualitas(df)
-        audit_tambahan(df)
-        uji_titik_waktu(df)
-        fraud_per_minggu(df)
-        uji_kebocoran(df, df_bersih)
+        for f in (audit_kualitas, audit_tambahan, uji_titik_waktu, fraud_per_minggu):
+            jalankan("audit", f, df)
+        jalankan("audit", uji_kebocoran, df, df_bersih)
     if args.tahap in ("validasi", "semua"):
-        validasi(df_bersih)
-    if args.tahap in ("fitur", "imbalance", "shift", "kalibrasi", "semua"):
+        jalankan("validasi", validasi, df_bersih)
+    if args.tahap in ("fitur", "imbalance", "shift", "kalibrasi", "analisis", "final", "semua"):
+        mulai = time.perf_counter()
         gab, dm, lipatan, dasar = siapkan_data(df, muat_data(args.berkas_uji))
+        waktu_tahap["siapkan fitur"] = (time.perf_counter() - mulai) / 60
         if args.tahap in ("fitur", "semua"):
-            evaluasi_fitur(gab, dm, lipatan, dasar)
-        if args.tahap in ("imbalance", "shift", "kalibrasi", "semua"):
+            jalankan("fitur", evaluasi_fitur, gab, dm, lipatan, dasar)
+        if args.tahap in ("imbalance", "shift", "kalibrasi", "analisis", "final", "semua"):
             eks = Eksperimen(gab, dm, susun_fitur(dasar, KELOMPOK_TERPILIH),
                              [SEED + k for k in range(N_SEED_PR4)])
             if args.tahap in ("imbalance", "semua"):
-                kelas_tidak_seimbang(eks, lipatan)
+                jalankan("imbalance", kelas_tidak_seimbang, eks, lipatan)
             if args.tahap in ("shift", "semua"):
-                pergeseran_pola(eks, lipatan)
+                jalankan("shift", pergeseran_pola, eks, lipatan)
             if args.tahap in ("kalibrasi", "semua"):
-                kalibrasi_biaya(eks, lipatan)
+                jalankan("kalibrasi", kalibrasi_biaya, eks, lipatan)
+            if args.tahap in ("analisis", "semua"):
+                jalankan("analisis", analisis_error, eks, lipatan)
+                jalankan("analisis", pergeseran_pelengkap, eks)
+            if args.tahap in ("final", "semua"):
+                jalankan("final", model_final, eks)
     print(f"\nTabel dan gambar tersimpan di: {HASIL_DIR}")
+    print("Lama tiap tahap (menit): " + ", ".join(f"{k} {v:.1f}" for k, v in waktu_tahap.items())
+          + f"; total {(time.perf_counter() - mulai_total) / 60:.1f}")
 
 
 if __name__ == "__main__":
