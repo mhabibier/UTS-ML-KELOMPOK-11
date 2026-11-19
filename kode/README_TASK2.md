@@ -23,8 +23,9 @@ Semua perintah dijalankan dari akar repo.
 ```bash
 python kode/task2_klasifikasi.py                    # semua tahap (±4,7 jam di laptop pengembang)
 python kode/task2_klasifikasi.py --tahap final      # hanya model final + prediksi_klasifikasi.csv (±3 menit)
-python -m pytest kode/tests -q                      # unit test (36 tes)
-python kode/cek_format.py                           # cek format tiga berkas prediksi
+python -m pytest kode/tests -q                      # unit test (38 tes)
+python kode/cek_format.py                           # cek kesiapan pengumpulan: tiga berkas wajib ada dan benar
+python kode/cek_format.py --izinkan-belum-ada       # saat pengerjaan: berkas yang belum ada tidak dianggap gagal
 ```
 
 Setiap tahap bisa dijalankan sendiri dengan `--tahap <nama>`. Lama tiap tahap pada run penuh terakhir
@@ -46,9 +47,12 @@ model final memakai seed 42. LightGBM berjalan dengan `deterministic=True`, sehi
 
 ## Alur dan keputusan utama
 
-1. **Kebocoran.** `flag_review_manual` dibuang (tinjauan manual terjadi setelah transaksi; PR-AUC turun
-   0,871 -> 0,719 tanpa kolom ini). `umur_merchant_hari` (negatif di 955 transaksi) dan `volume_merchant_30h`
-   (konstan per merchant sepanjang Jan-Okt) dikecualikan sebagai kehati-hatian.
+1. **Kebocoran (dugaan).** Data tidak memuat waktu pencatatan kolom, jadi kolom dikecualikan secara konservatif
+   bila ketersediaannya saat transaksi tidak dapat dipastikan; ini keputusan kehati-hatian, bukan bukti mekanisme.
+   `flag_review_manual` (kamus: "pernah ditinjau manual", tanpa waktu tinjauan) diduga kuat dicatat setelah
+   transaksi: tingkat fraud 30,4% bila flag = 1 vs 0,13% bila flag = 0, dan PR-AUC turun 0,871 -> 0,719 tanpa
+   kolom ini. `umur_merchant_hari` (negatif di 955 transaksi) dan `volume_merchant_30h` (konstan per merchant
+   sepanjang Jan-Okt) juga dikecualikan dengan alasan yang sama.
 2. **Label belum matang.** Tingkat fraud mingguan turun tajam mulai 11 Agt. Model yang dilatih sebelum 23 Jun
    mengharapkan jumlah fraud yang stabil, tetapi fraud teramati hanya 0,72 / 0,74 / 0,16 kali harapan pada minggu
    11 / 18 / 25 Agt. Transaksi mulai 11 Agt tidak dipakai untuk latih maupun validasi.

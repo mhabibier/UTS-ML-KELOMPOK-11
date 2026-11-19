@@ -6,9 +6,11 @@
 Untuk ketiganya: semua ID sama persis dengan ID di data uji (tidak ada yang hilang, berlebih, atau ganda).
 
 Cara menjalankan dari akar repo:
-    python kode/cek_format.py
-Keluar dengan kode 1 bila ada berkas yang gagal; berkas yang belum ada hanya dilaporkan.
+    python kode/cek_format.py                      # kesiapan pengumpulan: berkas yang belum ada = GAGAL
+    python kode/cek_format.py --izinkan-belum-ada  # saat pengerjaan: berkas yang belum ada hanya dilaporkan
+Keluar dengan kode 1 bila ada berkas yang gagal (atau belum ada, tanpa --izinkan-belum-ada), selain itu 0.
 """
+import argparse
 import sys
 from pathlib import Path
 
@@ -94,25 +96,39 @@ SPEK = [
 ]
 
 
-def main():
-    gagal = False
+def periksa_semua(root=ROOT, data_dir=DATA_DIR, izinkan_belum_ada=False):
+    """Memeriksa ketiga berkas. Mengembalikan (kode keluar, daftar baris laporan)."""
+    laporan, gagal = [], False
     for berkas, fungsi, data_uji, kolom_id in SPEK:
-        jalur = ROOT / berkas
+        jalur = Path(root) / berkas
         if not jalur.exists():
-            print(f"[BELUM ADA] {berkas}")
+            if izinkan_belum_ada:
+                laporan.append(f"[BELUM ADA] {berkas}")
+            else:
+                gagal = True
+                laporan.append(f"[GAGAL] {berkas}: berkas wajib belum ada")
             continue
         df = pd.read_csv(jalur, dtype={kolom_id: str})
-        id_uji = pd.read_csv(DATA_DIR / data_uji, usecols=[kolom_id], dtype={kolom_id: str})[kolom_id]
+        id_uji = pd.read_csv(Path(data_dir) / data_uji, usecols=[kolom_id], dtype={kolom_id: str})[kolom_id]
         masalah = fungsi(df, id_uji)
         if masalah:
             gagal = True
-            print(f"[GAGAL] {berkas}:")
-            for m in masalah:
-                print(f"    - {m}")
+            laporan.append(f"[GAGAL] {berkas}:")
+            laporan += [f"    - {m}" for m in masalah]
         else:
-            print(f"[LOLOS] {berkas} ({len(df):,} baris)")
-    sys.exit(1 if gagal else 0)
+            laporan.append(f"[LOLOS] {berkas} ({len(df):,} baris)")
+    return (1 if gagal else 0), laporan
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Cek format tiga berkas prediksi")
+    parser.add_argument("--izinkan-belum-ada", action="store_true",
+                        help="saat pengerjaan: berkas yang belum ada tidak dianggap gagal")
+    args = parser.parse_args(argv)
+    kode, laporan = periksa_semua(izinkan_belum_ada=args.izinkan_belum_ada)
+    print("\n".join(laporan))
+    return kode
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
