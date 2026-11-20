@@ -21,5 +21,10 @@
     "halaman": 14,
     "text_bounds": "lolos"
   },
-  "batasan": "Run all penuh lintas tiga task tidak diulang pada finalisasi ini. Task 2 final dan Task 1 telah direproduksi pada review sebelumnya; tes integrasi memeriksa urutan, propagasi kegagalan dan validasi sebelum laporan. Grid Task 3 dapat berbeda kecil antar-run; isi CSV final identik. Persetujuan laporan/kontribusi menunggu kedua anggota."
+  "batasan": "Run all penuh lintas tiga task tidak diulang pada finalisasi ini. Task 2 final dan Task 1 telah direproduksi pada review sebelumnya; tes integrasi memeriksa urutan, propagasi kegagalan dan validasi sebelum laporan. Grid Task 3 dapat berbeda kecil antar-run; isi CSV final identik. Persetujuan laporan/kontribusi menunggu kedua anggota.",
+  "salinan_bersih": {
+    "sumber": "git archive fb56614",
+    "data": "dataset resmi disediakan terpisah",
+    "hasil": "Ketiga CSV dan manifest laporan lolos dari salinan file Git tanpa arsip lokal"
+  }
 }
