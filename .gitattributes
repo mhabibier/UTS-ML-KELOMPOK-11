@@ -1,0 +1,3 @@
+# PDF/gambar harus disimpan sebagai byte asli, tanpa konversi akhir baris Git.
+*.pdf binary
+*.png binary
