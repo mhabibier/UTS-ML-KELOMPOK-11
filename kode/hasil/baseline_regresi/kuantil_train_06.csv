@@ -1,0 +1,29 @@
+layanan,pulau_tujuan,p50,p90
+ekspres,bali-nusa tenggara,41.3,66.94000000000003
+ekspres,jawa,36.3,57.4
+ekspres,kalimantan,52.2,80.1
+ekspres,maluku,63.1,99.2
+ekspres,papua,87.4,133.02
+ekspres,sulawesi,52.9,83.96000000000002
+ekspres,sumatera,40.9,65.50999999999999
+hemat,bali-nusa tenggara,77.6,143.93
+hemat,jawa,66.7,110.36000000000023
+hemat,kalimantan,108.4,169.14999999999998
+hemat,maluku,144.55,219.2
+hemat,papua,195.9,311.65999999999997
+hemat,sulawesi,108.1,176.11999999999998
+hemat,sumatera,75.5,130.83000000000004
+kargo,bali-nusa tenggara,81.8,145.2
+kargo,jawa,71.5,113.27000000000007
+kargo,kalimantan,123.5,181.1
+kargo,maluku,166.6,239.95999999999998
+kargo,papua,221.4,328.92
+kargo,sulawesi,122.8,191.5
+kargo,sumatera,81.2,140.9
+reguler,bali-nusa tenggara,60.2,106.17000000000003
+reguler,jawa,52.8,86.1
+reguler,kalimantan,82.9,125.5
+reguler,maluku,107.5,162.94000000000005
+reguler,papua,147.75,221.63
+reguler,sulawesi,83.4,130.44000000000003
+reguler,sumatera,59.8,101.1

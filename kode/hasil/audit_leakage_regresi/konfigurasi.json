@@ -1,0 +1,27 @@
+{
+  "python": "3.13.0",
+  "versi": {
+    "lightgbm": "4.7.0",
+    "numpy": "2.5.4",
+    "pandas": "3.1.1",
+    "scikit-learn": "1.9.1"
+  },
+  "parameter": {
+    "n_estimators": 200,
+    "learning_rate": 0.05,
+    "reg_lambda": 1.0,
+    "objective": "quantile",
+    "random_state": 42,
+    "n_jobs": 4,
+    "deterministic": true,
+    "force_col_wise": true,
+    "verbosity": -1,
+    "num_leaves": 31,
+    "min_child_samples": 100
+  },
+  "desain": "Mei-Juni; baris train/validasi, seed, preprocessing dan parameter sama; hanya tambah jumlah_scan.",
+  "tuning_ulang": false,
+  "ketersediaan_scan": "Belum dikonfirmasi. Kamus hanya menyebut jumlah scan yang tercatat di sistem.",
+  "keputusan": "Model utama tetap tanpa jumlah_scan sampai ketersediaan saat pickup dapat dipastikan.",
+  "batasan": "Perbaikan skor atau gain tinggi bukan bukti waktu tersedianya fitur. Jika scan mencakup kejadian setelah pickup, penggunaan tersebut adalah leakage. Jika hanya scan yang sudah ada saat pickup, fitur berpotensi sah. Gain adalah statistik model, bukan hubungan sebab-akibat atau pengganti SHAP/PDP. Ini eksperimen pengembangan; belum kalibrasi/evaluasi akhir atau prediksi test."
+}

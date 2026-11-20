@@ -1,0 +1,542 @@
+Cell 1: ['setup']
+Python: D:\TEL-U\TINGKAT_4\2026\MACHINE_LEARNING\UTS\UTS-ML-KELOMPOK-11\.venv\Scripts\python.exe
+Folder hasil: C:\Users\Muhammad Habibie R\Documents\ChatGPT\ML\clean_task1\kode\hasil
+Folder data: D:\TEL-U\TINGKAT_4\2026\MACHINE_LEARNING\UTS
+Cell 3: ['definitions']
+Cell 4: ['stage']
+
+=== regresi_train.csv.gz ===
+Baris: 250,000 | Kolom: 77
+ID kosong: 0
+Duplikat ID (kemunculan setelah pertama): 0
+Duplikat seluruh baris (setelah pertama): 0
+Rentang pickup: 2025-01-01 00:00:00 sampai 2025-08-31 00:00:00
+Tanggal kosong/tidak terbaca: 0
+
+Jumlah paket per bulan:
+tgl_pickup
+2025-01    29985
+2025-02    27556
+2025-03    32829
+2025-04    26244
+2025-05    32841
+2025-06    31941
+2025-07    34436
+2025-08    34168
+Freq: M
+
+Kolom dengan nilai kosong:
+          jumlah  persen
+berat_kg   13897    5.56
+
+Pemeriksaan durasi_jam:
+Kosong/non-numerik: 0
+Tak hingga: 0
+Nol/negatif: 0
+count    250000.000000
+mean         77.838195
+std         207.656270
+min          11.600000
+1%           23.500000
+50%          61.700000
+90%         117.800000
+99%         224.701000
+max       25452.000000
+
+=== regresi_test.csv.gz ===
+Baris: 60,000 | Kolom: 76
+ID kosong: 0
+Duplikat ID (kemunculan setelah pertama): 0
+Duplikat seluruh baris (setelah pertama): 0
+Rentang pickup: 2025-09-01 00:00:00 sampai 2025-10-31 00:00:00
+Tanggal kosong/tidak terbaca: 0
+
+Jumlah paket per bulan:
+tgl_pickup
+2025-09    29638
+2025-10    30362
+Freq: M
+
+Kolom dengan nilai kosong:
+          jumlah  persen
+berat_kg    3265    5.44
+
+Kolom target ada di test: False
+
+ID yang muncul di train dan test: 0
+
+Audit awal selesai. Belum ada data yang dibuang atau diubah.
+Audit leakage, kategori, dan outlier perlu pemeriksaan lanjutan.
+Cell 6: ['definitions']
+Cell 7: ['stage']
+{
+  "versi": {
+    "python": "3.13.0",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1"
+  },
+  "train": {
+    "baris": 250000,
+    "nilai_kosong": {
+      "berat_kg": 13897
+    },
+    "nilai_tak_hingga": {},
+    "pelanggaran_aturan": {
+      "berat_kg_nol_negatif": 0,
+      "jarak_km_negatif": 0,
+      "volume_liter_nol_negatif": 0,
+      "jumlah_item_bukan_bilangan_bulat_positif": 0,
+      "nilai_barang_negatif": 0,
+      "alamat_skor_di_luar_0_1": 0,
+      "indeks_kemacetan_di_luar_0_1": 0,
+      "jam_pickup_tidak_valid": 0,
+      "asuransi_bukan_0_1": 0,
+      "cod_bukan_0_1": 0,
+      "hujan_negatif": 0
+    },
+    "kategori": {
+      "layanan": {
+        "unik_asli": 4,
+        "unik_setelah_normalisasi": 4,
+        "baris_berubah_penulisan": 0
+      },
+      "mitra_kurir": {
+        "unik_asli": 12,
+        "unik_setelah_normalisasi": 12,
+        "baris_berubah_penulisan": 250000
+      },
+      "hub_asal": {
+        "unik_asli": 6,
+        "unik_setelah_normalisasi": 6,
+        "baris_berubah_penulisan": 250000
+      },
+      "kota_asal": {
+        "unik_asli": 30,
+        "unik_setelah_normalisasi": 30,
+        "baris_berubah_penulisan": 250000
+      },
+      "pulau_tujuan": {
+        "unik_asli": 7,
+        "unik_setelah_normalisasi": 7,
+        "baris_berubah_penulisan": 250000
+      },
+      "kota_tujuan": {
+        "unik_asli": 405,
+        "unik_setelah_normalisasi": 405,
+        "baris_berubah_penulisan": 250000
+      }
+    }
+  },
+  "test": {
+    "baris": 60000,
+    "nilai_kosong": {
+      "berat_kg": 3265
+    },
+    "nilai_tak_hingga": {},
+    "pelanggaran_aturan": {
+      "berat_kg_nol_negatif": 0,
+      "jarak_km_negatif": 0,
+      "volume_liter_nol_negatif": 0,
+      "jumlah_item_bukan_bilangan_bulat_positif": 0,
+      "nilai_barang_negatif": 0,
+      "alamat_skor_di_luar_0_1": 0,
+      "indeks_kemacetan_di_luar_0_1": 0,
+      "jam_pickup_tidak_valid": 0,
+      "asuransi_bukan_0_1": 0,
+      "cod_bukan_0_1": 0,
+      "hujan_negatif": 0
+    },
+    "kategori": {
+      "layanan": {
+        "unik_asli": 4,
+        "unik_setelah_normalisasi": 4,
+        "baris_berubah_penulisan": 0
+      },
+      "mitra_kurir": {
+        "unik_asli": 13,
+        "unik_setelah_normalisasi": 13,
+        "baris_berubah_penulisan": 60000
+      },
+      "hub_asal": {
+        "unik_asli": 6,
+        "unik_setelah_normalisasi": 6,
+        "baris_berubah_penulisan": 60000
+      },
+      "kota_asal": {
+        "unik_asli": 30,
+        "unik_setelah_normalisasi": 30,
+        "baris_berubah_penulisan": 60000
+      },
+      "pulau_tujuan": {
+        "unik_asli": 7,
+        "unik_setelah_normalisasi": 7,
+        "baris_berubah_penulisan": 60000
+      },
+      "kota_tujuan": {
+        "unik_asli": 405,
+        "unik_setelah_normalisasi": 405,
+        "baris_berubah_penulisan": 60000
+      }
+    }
+  },
+  "target": {
+    "kuantil": {
+      "0": 11.6,
+      "0.5": 61.7,
+      "0.9": 117.8,
+      "0.99": 224.70100000000093,
+      "0.999": 3054.017999999807,
+      "1": 25452.0
+    },
+    "jumlah_di_atas_jam": {
+      "168": 7480,
+      "720": 370,
+      "2160": 327
+    }
+  },
+  "konsistensi_snapshot": {
+    "asumsi_batas_eksklusif": "2025-09-01 00:00:00",
+    "perkiraan_tiba_setelah_snapshot": 2804
+  },
+  "kategori_test_baru_setelah_normalisasi": {
+    "layanan": {
+      "kategori_baru": 0,
+      "baris_test_terdampak": 0
+    },
+    "mitra_kurir": {
+      "kategori_baru": 1,
+      "baris_test_terdampak": 2342
+    },
+    "hub_asal": {
+      "kategori_baru": 0,
+      "baris_test_terdampak": 0
+    },
+    "kota_asal": {
+      "kategori_baru": 0,
+      "baris_test_terdampak": 0
+    },
+    "pulau_tujuan": {
+      "kategori_baru": 0,
+      "baris_test_terdampak": 0
+    },
+    "kota_tujuan": {
+      "kategori_baru": 0,
+      "baris_test_terdampak": 0
+    }
+  }
+}
+
+10 korelasi Spearman terbesar (nilai absolut):
+jumlah_scan         0.768956
+jarak_km            0.498169
+f04                 0.360381
+f05                 0.287708
+f22                 0.236466
+f17                 0.214640
+f23                 0.200079
+antrean_hub_asal    0.177031
+f09                 0.115202
+alamat_skor        -0.106101
+
+Ringkasan tersimpan di: C:\Users\Muhammad Habibie R\Documents\ChatGPT\ML\clean_task1\kode\hasil\audit_regresi
+Tidak ada data yang dibuang, diimputasi, atau dipakai melatih model.
+Cell 9: ['definitions']
+Cell 10: ['stage']
+validasi_mulai validasi_selesai_eksklusif  train_sebelum_cek_label  train_label_belum_tersedia  train_dipakai  validasi
+    2025-06-01                 2025-07-01                   149455                        2906         146549     31941
+    2025-07-01                 2025-08-01                   181396                        2848         178548     34436
+    2025-08-01                 2025-09-01                   215832                        3343         212489     34168
+
+Lolos: train mendahului validasi; indeks tidak tumpang tindih; label train sudah tersedia menurut asumsi.
+Semua baris periode validasi tetap dinilai. Dataset sumber tidak diubah.
+Ini fold eksplorasi baseline; belum pembagian final tuning/kalibrasi/evaluasi.
+Cell 12: ['definitions']
+Cell 13: ['stage']
+  bulan         model  train_dipakai  validasi  fallback_global  pinball_p50  pinball_p90  coverage_p90
+2025-06        global         146549     31941                0    15.843720    14.328196      0.909896
+2025-06 layanan_pulau         146549     31941                0    12.767103    11.666170      0.919007
+2025-07        global         178548     34436                0    17.641229    16.071521      0.883726
+2025-07 layanan_pulau         178548     34436                0    14.566642    13.364699      0.878180
+2025-08        global         212489     34168                0    17.154329    15.964308      0.896980
+2025-08 layanan_pulau         212489     34168                0    14.072909    13.286466      0.899145
+
+Gabungan berbobot jumlah baris validasi:
+        model  jumlah_validasi  pinball_p50  coverage_p50  pinball_p90  coverage_p90  mae_p50_jam
+       global           100545    16.904736      0.499896    15.481270      0.896544    33.809472
+layanan_pulau           100545    13.827183      0.501547    12.798527      0.898274    27.654365
+
+Hasil tersimpan di C:\Users\Muhammad Habibie R\Documents\ChatGPT\ML\clean_task1\kode\hasil\baseline_regresi
+Belum membuat prediksi test atau mengkalibrasi P90. Dataset mentah tidak diubah.
+Cell 15: ['definitions']
+Cell 16: ['stage']
+skema fold  train  validasi  pinball_p50  pinball_p90  coverage_p90
+waktu   06 146549     31941    12.767103    11.666170      0.919007
+waktu   07 178548     34436    14.566642    13.364699      0.878180
+waktu   08 212489     34168    14.072909    13.286466      0.899145
+ acak    1 166666     83334    12.788831    10.894744      0.899669
+ acak    2 166667     83333    13.970733    13.083851      0.900880
+ acak    3 166667     83333    13.492911    12.241506      0.899728
+
+Gabungan berbobot jumlah baris:
+skema  jumlah_validasi  pinball_p50  coverage_p50  pinball_p90  coverage_p90  mae_p50_jam
+ acak           250000    13.417489      0.501088    12.073362      0.900092    26.834979
+waktu           100545    13.827183      0.501547    12.798527      0.898274    27.654365
+
+Catatan: Periode evaluasi dan ukuran train berbeda. Selisih skor bukan efek murni pengacakan. Fold acak dapat memakai masa depan untuk memprediksi masa lalu dan bukan simulasi deployment.
+
+Hasil disimpan: C:\Users\Muhammad Habibie R\Documents\ChatGPT\ML\clean_task1\kode\hasil\perbandingan_validasi
+Cell 18: ['definitions']
+Cell 19: ['stage']
+Validasi bulan 05: melatih lgb_15, P50...
+Validasi bulan 05: melatih lgb_15, P90...
+Validasi bulan 05: melatih lgb_31, P50...
+Validasi bulan 05: melatih lgb_31, P90...
+Validasi bulan 06: melatih lgb_15, P50...
+Validasi bulan 06: melatih lgb_15, P90...
+Validasi bulan 06: melatih lgb_31, P50...
+Validasi bulan 06: melatih lgb_31, P90...
+
+Hasil pengembangan Mei-Juni:
+   model  jumlah_validasi  pinball_p50  coverage_p50  pinball_p90  coverage_p90  mae_p50_jam  skor_pemilihan
+baseline            64782    12.962455      0.522583    11.506339      0.906888    25.924910       12.234397
+  lgb_15            64782    10.087140      0.577815     9.777672      0.921568    20.174279        9.932406
+  lgb_31            64782    10.092032      0.577275     9.749500      0.917246    20.184063        9.920766
+
+Kandidat LightGBM terpilih: lgb_31
+Belum mengevaluasi Juli/Agustus atau test; belum kalibrasi. Model akan dilatih ulang untuk tahap berikutnya.
+Cell 21: ['definitions']
+Cell 22: ['stage']
+Validasi 05: ridge_1; fit 88,488, residual 23,347 baris...
+Validasi 05: ridge_100; fit 88,488, residual 23,347 baris...
+Validasi 06: ridge_1; fit 113,592, residual 30,074 baris...
+Validasi 06: ridge_100; fit 113,592, residual 30,074 baris...
+
+Pengembangan model linear Mei-Juni:
+    model  jumlah_validasi  pinball_p50  coverage_p50  pinball_p90  coverage_p90  mae_p50_jam  skor_pemilihan
+ baseline            64782    12.962455      0.522583    11.506339      0.906888    25.924910       12.234397
+  ridge_1            64782    10.549474      0.542898    10.075569      0.927217    21.098948       10.312521
+ridge_100            64782    10.592027      0.540767    10.092081      0.927017    21.184054       10.342054
+
+Kandidat Ridge terpilih: ridge_1
+Belum kalibrasi Juli, evaluasi Agustus, atau prediksi test.
+Cell 24: ['definitions']
+Cell 25: ['stage']
+Validasi 05: tanpa_scan, P50...
+Validasi 05: tanpa_scan, P90...
+Validasi 05: dengan_scan, P50...
+Validasi 05: dengan_scan, P90...
+Validasi 06: tanpa_scan, P50...
+Validasi 06: tanpa_scan, P90...
+Validasi 06: dengan_scan, P50...
+Validasi 06: dengan_scan, P90...
+
+Hasil gabungan Mei-Juni:
+    kondisi  jumlah_validasi  pinball_p50  coverage_p50  pinball_p90  coverage_p90  mae_p50_jam
+dengan_scan            64782     8.455126      0.559322     8.293575      0.911704    16.910252
+ tanpa_scan            64782    10.092032      0.577275     9.749500      0.917246    20.184063
+
+Dampak penambahan jumlah_scan (nilai positif = loss menurun):
+     metrik  tanpa_scan  dengan_scan  penurunan_loss  penurunan_persen
+pinball_p50   10.092032     8.455126        1.636905         16.219781
+pinball_p90    9.749500     8.293575        1.455925         14.933333
+
+Keputusan: Model utama tetap tanpa jumlah_scan sampai ketersediaan saat pickup dapat dipastikan.
+Eksperimen tidak memastikan kapan scan dicatat. Dataset dan model utama tidak diubah.
+Cell 27: ['definitions']
+Cell 28: ['stage']
+Validasi 05: asli, P50; train 113,592 baris...
+Validasi 05: asli, P90; train 113,592 baris...
+Validasi 05: cap_p99, P50; train 113,592 baris...
+Validasi 05: cap_p99, P90; train 113,592 baris...
+Validasi 05: kurir_baru, P50; train 90,835 baris...
+Validasi 05: kurir_baru, P90; train 90,835 baris...
+Validasi 06: asli, P50; train 146,549 baris...
+Validasi 06: asli, P90; train 146,549 baris...
+Validasi 06: cap_p99, P50; train 146,549 baris...
+Validasi 06: cap_p99, P90; train 146,549 baris...
+Validasi 06: kurir_baru, P50; train 117,143 baris...
+Validasi 06: kurir_baru, P90; train 117,143 baris...
+
+Hasil pengembangan Mei-Juni:
+   kondisi              subset  jumlah_validasi  pinball_p50  pinball_p90  coverage_p90
+      asli kurir_disembunyikan            13099    10.742493    11.007173      0.918696
+      asli               semua            64782    10.092032     9.749500      0.917246
+   cap_p99 kurir_disembunyikan            13099    10.738225    11.149992      0.917627
+   cap_p99               semua            64782    10.089605     9.926397      0.914575
+kurir_baru kurir_disembunyikan            13099    11.152038    11.054647      0.925261
+kurir_baru               semua            64782    10.234350     9.764050      0.918604
+
+Baca perbandingan pada subset yang sama. Data validasi dan dataset mentah tidak diubah.
+Model utama belum diubah. Hasil tersimpan di C:\Users\Muhammad Habibie R\Documents\ChatGPT\ML\clean_task1\kode\hasil\uji_ketahanan_regresi
+Cell 30: ['definitions']
+Cell 31: ['stage']
+Melatih LightGBM P50 pada 178,548 baris latihan...
+Melatih LightGBM P90 pada 178,548 baris latihan...
+Koreksi P90 dari Juli: +4.592367 jam (statistik urut 28153).
+
+Pembagian data:
+ train  train_label_belum_tersedia  juli_total  kalibrasi_juli  juli_belum_tiba_sebelum_agustus  evaluasi_agustus
+178548                        2848       34436           31280                             3156             34168
+
+Evaluasi Agustus (model tetap, seluruh label Agustus):
+                   model  jumlah  pinball_p50  coverage_p50  pinball_p90  coverage_p90  mae_p50_jam
+baseline_tanpa_kalibrasi   34168    14.075848      0.490927    13.288693      0.896277    28.151696
+             lgb_sebelum   34168    10.865726      0.474391    11.491574      0.863147    21.731452
+             lgb_sesudah   34168    10.865726      0.474391    11.406934      0.897624    21.731452
+
+Metrik Juli tersimpan sebagai diagnostik, bukan evaluasi independen.
+Belum membuat prediksi test atau melakukan refit model final. Hasil: C:\Users\Muhammad Habibie R\Documents\ChatGPT\ML\clean_task1\kode\hasil\kalibrasi_regresi
+Cell 33: ['definitions']
+Cell 34: ['stage']
+Melatih LightGBM P50 pada 178,548 baris latihan...
+Melatih LightGBM P90 pada 178,548 baris latihan...
+
+layanan: tiga kelompok dengan pinball P90 tertinggi (setelah kalibrasi)
+kelompok  jumlah  pinball_p50  pinball_p90  coverage_p90  durasi_di_atas_720_jam
+   hemat   11349    14.328292    14.934790      0.890211                      21
+   kargo    3414    11.655807    11.248770      0.879613                       2
+ reguler   14335     9.780013    10.710554      0.902267                      24
+
+pulau_tujuan: tiga kelompok dengan pinball P90 tertinggi (setelah kalibrasi)
+  kelompok  jumlah  pinball_p50  pinball_p90  coverage_p90  durasi_di_atas_720_jam
+  Sulawesi    2181    26.761280    34.736958      0.879413                       7
+Kalimantan    1981    24.198342    29.737335      0.875820                       8
+    Maluku     679    23.491935    25.788052      0.911635                       2
+
+mitra_kurir: tiga kelompok dengan pinball P90 tertinggi (setelah kalibrasi)
+kelompok  jumlah  pinball_p50  pinball_p90  coverage_p90  durasi_di_atas_720_jam
+     K06    2719    16.446563    21.680684      0.916513                       9
+     K07    2677    18.717546    18.976790      0.657826                       5
+     K02    4139    13.280046    15.244918      0.901184                       9
+
+Lolos: metrik kelompok berbobot jumlah paket sama dengan metrik keseluruhan.
+Hasil dan grafik: C:\Users\Muhammad Habibie R\Documents\ChatGPT\ML\clean_task1\kode\hasil\analisis_error_regresi
+Cell 36: ['definitions']
+Cell 37: ['stage']
+Melatih LightGBM P50 pada 178,548 baris latihan...
+Melatih LightGBM P90 pada 178,548 baris latihan...
+PDP kota_tujuan: 12 nilai, 2,000 baris referensi...
+PDP layanan: 4 nilai, 2,000 baris referensi...
+PDP jarak_km: 20 nilai, 2,000 baris referensi...
+PDP f04: 20 nilai, 2,000 baris referensi...
+PDP f17: 20 nilai, 2,000 baris referensi...
+
+Lima fitur teratas (gain bukan persentase pengaruh sebab-akibat):
+      fitur  porsi_gain_p50  porsi_gain_p90  porsi_gain_rata
+kota_tujuan        0.189651        0.246450         0.218051
+    layanan        0.254620        0.173697         0.214159
+   jarak_km        0.239907        0.088800         0.164353
+        f04        0.040167        0.251231         0.145699
+        f17        0.062740        0.037561         0.050151
+
+Tabel dan grafik tersimpan di: C:\Users\Muhammad Habibie R\Documents\ChatGPT\ML\clean_task1\kode\hasil\interpretasi_regresi
+Tidak tuning ulang, tidak membuat prediksi test, dan tidak mengubah dataset mentah.
+Cell 39: ['definitions']
+Cell 40: ['stage']
+Melatih LightGBM P50 pada 212,489 baris latihan...
+Melatih LightGBM P90 pada 212,489 baris latihan...
+
+Pembagian final: {'validasi_mulai': '2025-08-01', 'validasi_selesai_eksklusif': '2025-09-01', 'train_sebelum_cek_label': 215832, 'train_label_belum_tersedia': 3343, 'train_dipakai': 212489, 'validasi': 34168, 'kalibrasi_agustus': 31568, 'agustus_belum_tiba_sebelum_september': 2600}
+Koreksi P90 baru: +0.218816 jam
+Baris test dengan kategori baru: {'layanan': 0, 'mitra_kurir': 2342, 'hub_asal': 0, 'kota_asal': 0, 'pulau_tujuan': 0, 'kota_tujuan': 0}
+Lolos pemeriksaan CSV: 60,000 baris; ID lengkap/unik; nilai finite; P90 >= P50.
+Output: C:\Users\Muhammad Habibie R\Documents\ChatGPT\ML\clean_task1\prediksi_regresi.csv
+Belum mengetahui skor test; belum commit atau push.
+Cell 42: ['definitions']
+Cell 43: ['stage']
+Melatih LightGBM P50 pada 146,549 baris latihan...
+Melatih LightGBM P90 pada 146,549 baris latihan...
+ periode       model  jumlah  pinball_p50  coverage_p50  pinball_p90  coverage_p90  mae_p50_jam
+    juli    baseline   34436    14.559556      0.480544    13.347837      0.882158    29.119112
+    juli lgb_sebelum   34436    10.892192      0.463672    11.376635      0.858404    21.784384
+    juli lgb_sesudah   34436    10.892192      0.463672    11.426607      0.848269    21.784384
+ agustus    baseline   34168    14.075146      0.497922    13.287871      0.899116    28.150291
+ agustus lgb_sebelum   34168    11.037637      0.502546    11.522426      0.871546    22.075273
+ agustus lgb_sesudah   34168    11.037637      0.502546    11.557210      0.862591    22.075273
+gabungan    baseline   68604    14.318297      0.489199    13.317971      0.890604    28.636594
+gabungan lgb_sebelum   68604    10.964630      0.483033    11.449246      0.864950    21.929261
+gabungan lgb_sesudah   68604    10.964630      0.483033    11.491654      0.855402    21.929261
+Eksploratif: model dan koreksi tetap untuk Juli-Agustus; prediksi final tidak diubah.
+Cell 45: ['definitions']
+Cell 46: ['report']
+Draf laporan dari hasil eksperimen: C:\Users\Muhammad Habibie R\Documents\ChatGPT\ML\clean_task1\kode\hasil\laporan_task1.md
+Belum laporan.pdf kelompok; perlu penyuntingan bersama dan pengaturan batas halaman.
+Cell 48: ['test_definitions']
+Cell 49: ['test_definitions']
+Cell 50: ['test_definitions']
+Cell 51: ['test_definitions']
+Cell 52: ['test_definitions']
+Cell 53: ['test_definitions']
+Cell 54: ['tests']
+test_metrik_manual_dan_kelompok_kosong (__main__.AnalisisChecks.test_metrik_manual_dan_kelompok_kosong) ... ok
+test_prediksi_tidak_valid_ditolak (__main__.AnalisisChecks.test_prediksi_tidak_valid_ditolak) ... ok
+test_subset_ekstrem_tetap_mencakup_semua (__main__.AnalisisChecks.test_subset_ekstrem_tetap_mencakup_semua) ... ok
+test_grid_train_diskrit_dan_rentang (__main__.InterpretasiChecks.test_grid_train_diskrit_dan_rentang) ... ok
+test_kategori_dipertahankan_dan_unknown_ditolak (__main__.InterpretasiChecks.test_kategori_dipertahankan_dan_unknown_ditolak) ... ok
+test_pdp_manual_dan_sumber_tidak_berubah (__main__.InterpretasiChecks.test_pdp_manual_dan_sumber_tidak_berubah) ... ok
+test_input_tidak_valid (__main__.KalibrasiChecks.test_input_tidak_valid) ... ok
+test_kematangan_label_dan_evaluasi_utuh (__main__.KalibrasiChecks.test_kematangan_label_dan_evaluasi_utuh) ... ok
+test_koreksi_memakai_statistik_urut (__main__.KalibrasiChecks.test_koreksi_memakai_statistik_urut) ... ok
+test_koreksi_tidak_mengubah_p50_dan_sumber (__main__.KalibrasiChecks.test_koreksi_tidak_mengubah_p50_dan_sumber) ... ok
+test_label_dan_periode_terpisah (__main__.LinearChecks.test_label_dan_periode_terpisah) ... ok
+test_transformasi_kuantil_manual (__main__.LinearChecks.test_transformasi_kuantil_manual) ... ok
+test_unknown_missing_dan_fitur_terlarang (__main__.LinearChecks.test_unknown_missing_dan_fitur_terlarang) ... ok
+test_batas_final (__main__.FinalChecks.test_batas_final) ... ok
+test_output_rusak_ditolak (__main__.FinalChecks.test_output_rusak_ditolak) ... ok
+test_output_valid (__main__.FinalChecks.test_output_valid) ... ok
+test_cap_tidak_mengubah_sumber (__main__.KetahananChecks.test_cap_tidak_mengubah_sumber) ... ok
+test_kategori_disembunyikan_benar_benar_baru (__main__.KetahananChecks.test_kategori_disembunyikan_benar_benar_baru) ... ok
+test_kurir_dipilih_tanpa_target_dan_urutan (__main__.KetahananChecks.test_kurir_dipilih_tanpa_target_dan_urutan) ... ok
+test_batas_waktu_dan_label_lambat (__main__.HorizonChecks.test_batas_waktu_dan_label_lambat) ... ok
+test_model_tetap_dua_bulan (__main__.HorizonChecks.test_model_tetap_dua_bulan) ...  periode       model  jumlah  pinball_p50  coverage_p50  pinball_p90  coverage_p90  mae_p50_jam
+    juli    baseline       3          2.0           0.0          0.6           1.0          4.0
+    juli lgb_sebelum       3          2.0           0.0          0.6           1.0          4.0
+    juli lgb_sesudah       3          2.0           0.0          0.0           1.0          4.0
+ agustus    baseline       4          2.0           0.0          0.6           1.0          4.0
+ agustus lgb_sebelum       4          2.0           0.0          0.6           1.0          4.0
+ agustus lgb_sesudah       4          2.0           0.0          0.0           1.0          4.0
+gabungan    baseline       7          2.0           0.0          0.6           1.0          4.0
+gabungan lgb_sebelum       7          2.0           0.0          0.6           1.0          4.0
+gabungan lgb_sesudah       7          2.0           0.0          0.0           1.0          4.0
+Eksploratif: model dan koreksi tetap untuk Juli-Agustus; prediksi final tidak diubah.
+ok
+
+----------------------------------------------------------------------
+Ran 21 tests in 0.668s
+
+OK
+Lolos: 21 tes; tidak ada kegagalan atau error.
+Cell 56: ['preview']
+<IPython.core.display.Markdown object>
+      model  jumlah_validasi  ...  mae_p50_jam  skor_pemilihan
+0  baseline            64782  ...    25.924910       12.234397
+1    lgb_15            64782  ...    20.174279        9.932406
+2    lgb_31            64782  ...    20.184063        9.920766
+
+[3 rows x 8 columns]
+       model  jumlah_validasi  ...  mae_p50_jam  skor_pemilihan
+0   baseline            64782  ...    25.924910       12.234397
+1    ridge_1            64782  ...    21.098948       10.312521
+2  ridge_100            64782  ...    21.184054       10.342054
+
+[3 rows x 8 columns]
+<IPython.core.display.Markdown object>
+            periode                     model  ...  coverage_p90  mae_p50_jam
+3  agustus_evaluasi  baseline_tanpa_kalibrasi  ...      0.896277    28.151696
+4  agustus_evaluasi               lgb_sebelum  ...      0.863147    21.731452
+5  agustus_evaluasi               lgb_sesudah  ...      0.897624    21.731452
+
+[3 rows x 8 columns]
+<IPython.core.display.Markdown object>
+    id_paket         p50         p90
+0  P83639399   59.901321   71.985644
+1  P26553951  106.161774  136.724870
+2  P32537117   61.332897   86.564643
+3  P28750760   58.809362   68.587618
+4  P96580009   51.135156   63.865931
+Jumlah baris prediksi: 60000
+<IPython.core.display.Image object>
+<IPython.core.display.Image object>
+Draf laporan: C:\Users\Muhammad Habibie R\Documents\ChatGPT\ML\clean_task1\kode\hasil\laporan_task1.md
+Draf kontribusi: C:\Users\Muhammad Habibie R\Documents\ChatGPT\ML\clean_task1\kode\kontribusi_task1_draf.md

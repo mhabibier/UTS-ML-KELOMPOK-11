@@ -1,0 +1,47 @@
+{
+  "status": "sukses",
+  "task": 1,
+  "mode": "tests",
+  "mulai_utc": "2026-11-12T02:31:48.036378+00:00",
+  "python": "3.13.0",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "versi": {
+    "numpy": "2.5.4",
+    "pandas": "3.1.1",
+    "scipy": "1.18.1",
+    "scikit-learn": "1.9.1",
+    "lightgbm": "4.7.0",
+    "matplotlib": "3.11.2"
+  },
+  "sha256_kode": {
+    "analisis_error_regresi.py": "fc05eed0b7ac4ba5f45a15f1cfbb69eded7d65134673cde1693a850fa903f933",
+    "audit_awal_regresi.py": "37a27d37d7148b833723e3851093ee29c0b03bfc1b8f53dffce1055be228dd99",
+    "audit_lanjutan_regresi.py": "9fa88ef3acc8fc85f342c0d1c601d0ef6233e71c9b32da763ae3563383b5b807",
+    "audit_leakage_regresi.py": "fa3a4bb52af91f587644b0b2dc22f75f21cc0f458786c8d87e90771c22e940dc",
+    "bandingkan_validasi_regresi.py": "07a63e5f0eb064035988ef4d7f7116359bd9ac191d650206259041944c2fa9a6",
+    "baseline_regresi.py": "7ca122c849e47b51fb5ae2f2d62750896b486c8688a2dfa26557141463cc8000",
+    "interpretasi_regresi.py": "d7608a2c62ecad02757ea78281334fc7b3eecfc8d13e559902db4c92dbada568",
+    "kalibrasi_regresi.py": "097039ff7fa7e5c6a6c8c8475e1b46b5dd7e6b5c33513fc2e5759464b5edecd6",
+    "model_lightgbm_regresi.py": "e779a0284e8a9992361a49405771505f801fde8762ab442e58093fb74fb6daa1",
+    "model_linear_regresi.py": "880fe2c8ff6fc28d9775b452cc73241ecbfa01ad9381fcc1b83ee95b95eaca92",
+    "prediksi_final_regresi.py": "db429688a7e8dc7fed3f99f49d6181322dc0458acf9c88e7e6cb7c5dcb73f703",
+    "run_all.py": "0a6ff214e51d04592124d68024ba7b75b03467d03784519ecea45f9954cbb6f0",
+    "susun_laporan_task1.py": "5562584ce3916da85e34ef169b1f06162ddc0437cdc4eeda545bd51efd48e322",
+    "test_analisis_error_regresi.py": "ca3ad257227efdb6dc6d68011bb38e690d22a56f96df4732c1d6b89008f8bc1c",
+    "test_interpretasi_regresi.py": "764a952b92174db57a83186b45501edc7cbdbfa1b0453a2d27244149ea0935d9",
+    "test_kalibrasi_regresi.py": "71521b0be6ceed3b0f510b85706662a72260aa3bb539cbcf1b661357728f4853",
+    "test_model_linear_regresi.py": "c09d51387184efd5bc90a5db794c3403a4c9da598518903b9dfe473505bab7b1",
+    "test_prediksi_final_regresi.py": "cb700fc4ebbe467696aaf1409dec4d917038e047b8dcd40cf22954aae8f99dab",
+    "test_uji_ketahanan_regresi.py": "c50a0e1546e9df30ca2be12853654cbca412ae47173b07525d34d2c1e286c85c",
+    "uji_ketahanan_regresi.py": "c25826c8aa27aa954f9a481df441bdd393d7e9b4544b1176768d69255f53a3ab",
+    "validasi_waktu_regresi.py": "c00aa662be9f381f6a96d266c8b97090a315fa4f5e9481b2a6825cf6f77766fb"
+  },
+  "tahap": [
+    {
+      "nama": "tes",
+      "exit_code": 0,
+      "detik": 9.503
+    }
+  ],
+  "durasi_detik": 9.506
+}

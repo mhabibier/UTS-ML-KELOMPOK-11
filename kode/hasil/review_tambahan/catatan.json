@@ -1,0 +1,7 @@
+{
+  "shap_sample": 10000,
+  "seed": 42,
+  "shap": "TreeSHAP bawaan LightGBM; menjelaskan output mentah sebelum clipping dan kalibrasi, bukan sebab-akibat. Jumlah kontribusi diverifikasi sama dengan prediksi.",
+  "refit": "Eksploratif: Agustus pernah diperiksa. Koreksi ditransfer dari model berbeda; tidak memiliki jaminan split conformal. Seluruh train untuk kandidat final mengasumsikan semua label file tersedia; berbeda dari asumsi deployment 1 September.",
+  "status": "Kandidat refit disimpan terpisah; prediksi_regresi.csv utama tidak diganti. Keputusan final perlu persetujuan kelompok."
+}
