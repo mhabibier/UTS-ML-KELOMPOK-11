@@ -9,3 +9,4 @@ seaborn==0.13.2
 threadpoolctl==3.8.0
 ipykernel==7.4.0
 pytest==9.2.0
+reportlab==5.1.0

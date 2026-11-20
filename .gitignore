@@ -232,3 +232,6 @@ clustering.csv*
 
 # Cadangan lokal sebelum migrasi ke notebook; bukan sumber aktif
 kode/arsip_skrip_sebelum_notebook/
+
+# Render dan pemeriksaan visual laporan lokal
+/tmp/

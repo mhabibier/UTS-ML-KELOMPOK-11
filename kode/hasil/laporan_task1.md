@@ -150,7 +150,7 @@ Agustus kini digunakan sebagai kalibrasi model final; skor evaluasi Agustus di a
 
 ## Reproduksi dan kontribusi
 
-Dari root repository: `python kode/run_all.py --task 1 --data-dir "LOKASI_DATA"`. Gunakan Python 3.13.0 dan requirements-task1.txt. Seed 42 digunakan untuk prosedur acak. Peluncur menyimpan status dan fingerprint notebook dalam hasil/reproduksi_task1; metadata eksperimen menyimpan parameter dan versi. Instal requirements-notebook.txt untuk kernel Jupyter. Task 2/3 belum diintegrasikan. Untuk ujian lisan, jalankan cell baseline pada kode/Task1_Regresi.ipynb setelah cell definisi sebelumnya.
+Dari root repository: `python kode/run_all.py --task 1 --data-dir "LOKASI_DATA"`. Gunakan Python 3.13.0 dan requirements-task1.txt. Seed 42 digunakan untuk prosedur acak. Peluncur menyimpan status dan fingerprint notebook dalam hasil/reproduksi_task1; metadata eksperimen menyimpan parameter dan versi. Instal requirements-notebook.txt untuk kernel Jupyter. Task 2/3 sudah diintegrasikan melalui kode/run_all.py --task all; laporan kelompok dibentuk setelah ketiga task selesai. Untuk ujian lisan, jalankan cell baseline pada kode/Task1_Regresi.ipynb setelah cell definisi sebelumnya.
 
 Codex membantu menulis/debug skrip, menjalankan eksperimen, menyusun tabel/grafik dan draf. Validasi mencakup perhitungan manual, tes temporal, kategori baru, kesesuaian metrik agregat, dan pemeriksaan CSV. Anggota harus meninjau serta memahami kode dan mencatat bantuan AI secara jujur pada kontribusi.md; PR pekerjaan ini: https://github.com/telkom-ml-kelompok-11-2026/UTS-ML-KELOMPOK-11/pull/2; persetujuan anggota masih diperlukan.
 
