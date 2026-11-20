@@ -32,8 +32,10 @@ tidak membatasi tanggung jawab ujian lisan: kedua anggota perlu memahami semua t
 Dokumen ini disiapkan untuk ditinjau kedua anggota. Approval PR kode sebelumnya
 tidak otomatis dianggap persetujuan terhadap laporan dan kontribusi gabungan ini.
 
-- [ ] Muhammad Habibie Rabbani: telah membaca, membenarkan kontribusi/penggunaan AI,
-      dan menyetujui isi laporan gabungan. Bukti persetujuan: belum dicatat.
+- [x] Muhammad Habibie Rabbani: menyetujui bagian miliknya dalam laporan gabungan
+      serta catatan kontribusi/penggunaan AI untuk dirinya. Bukti: konfirmasi
+      langsung melalui chat Codex pada 20 November 2026, setelah PR #12 disiapkan
+      (versi `543db9c`): "Saya setuju untuk bagian saya".
 - [ ] Azmi Aziz syah Putra: telah membaca, membenarkan kontribusi/penggunaan AI,
       dan menyetujui isi laporan gabungan. Bukti persetujuan: belum dicatat.
 
