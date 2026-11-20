@@ -3,8 +3,35 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from task3_lanjutan import (NAMA_AKSI, ari_antar_run, periksa_nama, pilih_k, tandai_anomali,
-                            urutkan_label)
+from task3_lanjutan import (NAMA_AKSI, ari_antar_run, ari_matriks, jackknife_selisih, periksa_nama,
+                            pilih_k, ringkas_stabilitas, tandai_anomali, urutkan_label)
+
+
+def test_run_gagal_tidak_dihitung_sebagai_partisi():
+    """Run None atau satu cluster = gagal; dua run gagal tidak boleh menghasilkan ARI 1 (seolah stabil)."""
+    gagal = ringkas_stabilitas("x", [None, np.zeros(6, int), np.zeros(6, int)])
+    assert gagal["n_run_valid"] == 0 and gagal["n_run_gagal"] == 3
+    assert np.isnan(gagal["ari_rata2"]) and not gagal["stabil"]
+    a = np.array([0, 0, 1, 1, 2, 2])
+    campur = ringkas_stabilitas("y", [a, a[::-1].copy(), None, np.zeros(6, int)])
+    assert campur["n_run_valid"] == 2 and campur["n_run_gagal"] == 2
+    assert campur["ari_rata2"] == pytest.approx(1.0)
+
+
+def test_jackknife_selisih():
+    """Selisih rata-rata ARI dan galat baku jackknife berpasangan pada matriks yang diketahui."""
+    rng = np.random.default_rng(0)
+    runs = [rng.integers(0, 3, 300) for _ in range(6)]
+    m = ari_matriks(runs)
+    assert np.allclose(m, m.T, equal_nan=True) and np.isnan(np.diag(m)).all()
+    d, se = jackknife_selisih(m, m)
+    assert d == pytest.approx(0) and se == pytest.approx(0)            # representasi identik
+    d, se = jackknife_selisih(m + 0.1, m)
+    assert d == pytest.approx(0.1) and se == pytest.approx(0, abs=1e-12)  # selisih konstan: tanpa ketidakpastian
+    acak = m + rng.normal(0, 0.05, m.shape)
+    acak = (acak + acak.T) / 2
+    d, se = jackknife_selisih(acak, m)
+    assert se > 0
 
 
 def test_ari_tidak_peduli_nomor_cluster_tertukar():

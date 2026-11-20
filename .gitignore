@@ -219,6 +219,16 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-#Data UTS ML (jangan di-commit)
+# Dataset mentah UTS ML (jangan di-commit)
 /data/
+data_uts_ml/
+data_uts_ml.zip
 *.csv.gz
+regresi_train.csv*
+regresi_test.csv*
+klasifikasi_train.csv*
+klasifikasi_test.csv*
+clustering.csv*
+
+# Cadangan lokal sebelum migrasi ke notebook; bukan sumber aktif
+kode/arsip_skrip_sebelum_notebook/

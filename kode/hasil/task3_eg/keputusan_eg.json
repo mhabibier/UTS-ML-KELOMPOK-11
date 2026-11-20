@@ -8,6 +8,7 @@
     "komposisi_waktu"
   ],
   "metode": "KMeans (n_init=10)",
+  "n_thread": 4,
   "k_aktif": 2,
   "persentil_anomali": 98,
   "ukuran_segmen": {
@@ -17,5 +18,5 @@
     "2": 65297
   },
   "ari_vs_cluster_sementara_ad": 0.7270767111714976,
-  "durasi_menit": 13.9
+  "durasi_menit": 13.6
 }

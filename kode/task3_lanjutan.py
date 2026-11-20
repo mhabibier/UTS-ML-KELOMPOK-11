@@ -5,7 +5,8 @@ pelanggan tanpa transaksi = segmen 0; clustering hanya pada pelanggan aktif.
 
   e. Stabilitas: ulangi 20-30 kali (subsampel 80%, latih ulang, prediksi seluruh pelanggan aktif), ARI antar-run.
      - per k (2-10) dan representasi (tanpa / dengan komposisi kategori) -> keputusan k dan blok kategori,
-     - per metode pada k terpilih: K-Means, MiniBatch K-Means, Gaussian Mixture, HDBSCAN.
+     - per metode pada k terpilih: K-Means, MiniBatch K-Means, Gaussian Mixture, HDBSCAN + KNN
+       (run yang gagal membentuk >= 2 cluster dicatat terpisah, tidak dihitung sebagai partisi).
   f. Profil tiap segmen: ukuran, median fitur utama, kategori dan jam belanja dominan, nama, dan satu aksi.
   g. Anomali: pelanggan aktif dengan jarak ke centroid di atas persentil 98 diberi label -1 (±2%).
 
@@ -30,6 +31,7 @@ from sklearn.metrics import (adjusted_rand_score, calinski_harabasz_score, davie
                              silhouette_score)
 from sklearn.mixture import GaussianMixture
 from sklearn.neighbors import KNeighborsClassifier
+from threadpoolctl import threadpool_limits
 
 import task3_clustering as t3
 
@@ -46,6 +48,12 @@ N_HDBSCAN = 6_000        # HDBSCAN tidak sanggup 90 ribu baris; dilatih pada 6.0
 PORSI_SUBSAMPEL = 0.8
 AMBANG_STABIL = 0.80     # panduan: ARI > 0,8 berarti stabil
 PERSENTIL_ANOMALI = 98   # g: ±2% pelanggan aktif dengan jarak terjauh ke centroid -> -1
+# Blok kategori dipakai hanya bila stabilitas naik >= 0,01 ARI (bermakna secara praktis) DAN > 2 galat baku jackknife.
+# Ambang praktis ditambahkan setelah review PR #11: tanpa ambang ini, selisih ±0,001-0,002 (keduanya ARI ±0,99)
+# membuat keputusan berbalik tergantung jumlah thread komputer.
+AMBANG_PRAKTIS_KATEGORI = 0.01
+# Jumlah thread dikunci (sama dengan bagian a-d) supaya hasil K-Means sama di mesin mana pun dengan >= 4 core.
+N_THREAD = 4
 
 FITUR_PROFIL = ["recency_hari", "frekuensi_90h", "belanja_90h", "rata2_keranjang", "item_per_pesanan",
                 "persen_voucher", "persen_flash_sale", "persen_paylater", "persen_cod", "retur_90h",
@@ -59,6 +67,37 @@ def ari_antar_run(label_runs: list[np.ndarray]) -> np.ndarray:
     """ARI untuk setiap pasangan run (nomor cluster boleh tertukar; yang dinilai keanggotaannya)."""
     n = len(label_runs)
     return np.array([adjusted_rand_score(label_runs[i], label_runs[j]) for i in range(n) for j in range(i + 1, n)])
+
+
+def ari_matriks(label_runs: list[np.ndarray]) -> np.ndarray:
+    """Matriks ARI simetris antar-run (diagonal NaN); dipakai untuk jackknife."""
+    n = len(label_runs)
+    m = np.full((n, n), np.nan)
+    for i in range(n):
+        for j in range(i + 1, n):
+            m[i, j] = m[j, i] = adjusted_rand_score(label_runs[i], label_runs[j])
+    return m
+
+
+def _rata2_pasangan(m: np.ndarray, buang: int | None = None) -> float:
+    pilih = np.ones(len(m), dtype=bool)
+    if buang is not None:
+        pilih[buang] = False
+    sub = m[np.ix_(pilih, pilih)]
+    return float(np.nanmean(sub[np.triu_indices(pilih.sum(), 1)]))
+
+
+def jackknife_selisih(m_a: np.ndarray, m_b: np.ndarray) -> tuple[float, float]:
+    """Selisih rata-rata ARI (a - b) dan galat bakunya dengan jackknife leave-one-run-out berpasangan.
+
+    Pasangan ARI saling berbagi run, jadi simpangan baku biasa tidak menghasilkan galat baku yang benar.
+    Run ke-r di kedua representasi memakai subsampel yang sama, sehingga run dibuang berpasangan.
+    """
+    n = len(m_a)
+    selisih = _rata2_pasangan(m_a) - _rata2_pasangan(m_b)
+    tanpa = np.array([_rata2_pasangan(m_a, r) - _rata2_pasangan(m_b, r) for r in range(n)])
+    galat = float(np.sqrt((n - 1) / n * np.sum((tanpa - tanpa.mean()) ** 2)))
+    return float(selisih), galat
 
 
 def urutkan_label(label: np.ndarray, nilai: np.ndarray) -> np.ndarray:
@@ -103,13 +142,17 @@ def _kmeans(x, k, seed):
     return KMeans(n_clusters=k, n_init=10, random_state=seed).fit(x)
 
 
-def stabilitas_grid(rep: dict[str, np.ndarray]) -> pd.DataFrame:
-    """Per representasi dan k: kriteria internal (pada pool) dan stabilitas ARI (prediksi semua pelanggan aktif)."""
+def stabilitas_grid(rep: dict[str, np.ndarray]) -> tuple[pd.DataFrame, dict]:
+    """Per representasi dan k: kriteria internal (pada pool) dan stabilitas ARI (prediksi semua pelanggan aktif).
+
+    Mengembalikan tabel ringkas dan matriks ARI antar-run per (representasi, k) untuk jackknife.
+    Run ke-r memakai subsampel dan seed yang sama di kedua representasi (berpasangan).
+    """
     n = len(next(iter(rep.values())))
     rng = np.random.default_rng(SEED)
     pool = np.sort(rng.choice(n, N_POOL, replace=False))
     skor = np.sort(rng.choice(N_POOL, 5_000, replace=False))
-    baris = []
+    baris, matriks = [], {}
     for nama, x in rep.items():
         xp = x[pool]
         for k in K_GRID:
@@ -119,14 +162,16 @@ def stabilitas_grid(rep: dict[str, np.ndarray]) -> pd.DataFrame:
                 rows = np.sort(np.random.default_rng(SEED + 1000 + r).choice(N_POOL, int(PORSI_SUBSAMPEL * N_POOL),
                                                                              replace=False))
                 runs.append(_kmeans(xp[rows], k, SEED + 1000 + r).predict(x))
-            ari = ari_antar_run(runs)
+            m = ari_matriks(runs)
+            matriks[(nama, k)] = m
+            ari = m[np.triu_indices(len(m), 1)]
             baris.append({"representasi": nama, "k": k, "silhouette": silhouette_score(xp[skor], lab[skor]),
                           "davies_bouldin": davies_bouldin_score(xp, lab),
                           "calinski_harabasz": calinski_harabasz_score(xp, lab),
                           "ari_rata2": ari.mean(), "ari_sb": ari.std(), "ari_min": ari.min(),
                           "porsi_cluster_terkecil": np.bincount(lab).min() / len(lab)})
             print(f"  {nama:16s} k={k:2d} ARI {ari.mean():.3f} ± {ari.std():.3f}", flush=True)
-    return pd.DataFrame(baris)
+    return pd.DataFrame(baris), matriks
 
 
 def stabilitas_metode(x: np.ndarray, k: int) -> pd.DataFrame:
@@ -147,9 +192,12 @@ def stabilitas_metode(x: np.ndarray, k: int) -> pd.DataFrame:
     for nama, buat in pembuat.items():
         runs = [buat(x[rows], SEED + 2000 + r).predict(x)
                 for r, rows in ((r, subsampel(r, int(PORSI_SUBSAMPEL * n))) for r in range(N_RUN_METODE))]
-        hasil[nama] = (runs, np.full(N_RUN_METODE, np.nan))
+        hasil[nama] = (runs, None)
         print(f"  {nama} selesai", flush=True)
-    # HDBSCAN: dilatih pada 6.000 pelanggan, lalu pelanggan lain diberi label tetangga terdekat (KNN, 15 tetangga)
+    # HDBSCAN + KNN: HDBSCAN dilatih pada 6.000 pelanggan (tidak sanggup 90 ribu baris dan tidak punya predict),
+    # lalu pelanggan lain diberi label 15 tetangga terdekat di antara titik non-noise. Jadi stabilitasnya mencakup
+    # penyebaran KNN, dan noise HDBSCAN tidak ikut disebar. Run yang tidak menghasilkan >= 2 cluster = GAGAL
+    # (dicatat terpisah, tidak dihitung sebagai partisi).
     runs, noise = [], []
     for r in range(N_RUN_HDBSCAN):
         rows = subsampel(r, N_HDBSCAN)
@@ -157,19 +205,28 @@ def stabilitas_metode(x: np.ndarray, k: int) -> pd.DataFrame:
         noise.append((lab < 0).mean())
         inti = lab >= 0
         if inti.sum() < 15 or len(np.unique(lab[inti])) < 2:
-            runs.append(np.zeros(n, dtype=int))
+            runs.append(None)
             continue
         runs.append(KNeighborsClassifier(n_neighbors=15).fit(x[rows][inti], lab[inti]).predict(x))
-    hasil["HDBSCAN (min_cluster_size=50, min_samples=5)"] = (runs, np.array(noise))
-    print("  HDBSCAN selesai", flush=True)
-    baris = []
-    for nama, (runs, noise) in hasil.items():
-        ari = ari_antar_run(runs)
-        baris.append({"metode": nama, "n_run": len(runs), "ari_rata2": ari.mean(), "ari_sb": ari.std(),
-                      "ari_min": ari.min(), "jumlah_cluster_median": float(np.median([len(np.unique(r)) for r in runs])),
-                      "noise_persen_rata2": 100 * np.nanmean(noise) if np.isfinite(noise).any() else np.nan,
-                      "stabil": bool(ari.mean() > AMBANG_STABIL)})
-    return pd.DataFrame(baris)
+    hasil["HDBSCAN + KNN (min_cluster_size=50, min_samples=5)"] = (runs, np.array(noise))
+    print("  HDBSCAN + KNN selesai", flush=True)
+    return pd.DataFrame([ringkas_stabilitas(nama, runs, noise) for nama, (runs, noise) in hasil.items()])
+
+
+def ringkas_stabilitas(nama: str, runs: list, noise: np.ndarray | None = None) -> dict:
+    """Ringkasan stabilitas satu metode. Run bernilai None atau dengan < 2 cluster = gagal (tidak dihitung).
+
+    ARI dihitung hanya dari run yang valid; bila run valid kurang dari dua, ARI tidak tersedia (NaN).
+    """
+    valid = [r for r in runs if r is not None and len(np.unique(r)) >= 2]
+    ari = ari_antar_run(valid) if len(valid) >= 2 else np.array([])
+    noise = np.full(len(runs), np.nan) if noise is None else np.asarray(noise, dtype=float)
+    return {"metode": nama, "n_run": len(runs), "n_run_valid": len(valid), "n_run_gagal": len(runs) - len(valid),
+            "ari_rata2": ari.mean() if ari.size else np.nan, "ari_sb": ari.std() if ari.size else np.nan,
+            "ari_min": ari.min() if ari.size else np.nan,
+            "jumlah_cluster_median": float(np.median([len(np.unique(r)) for r in valid])) if valid else np.nan,
+            "noise_persen_rata2": 100 * np.nanmean(noise) if np.isfinite(noise).any() else np.nan,
+            "stabil": bool(ari.size and ari.mean() > AMBANG_STABIL)}
 
 
 # --------------------------------------------------------------------------
@@ -235,6 +292,12 @@ def periksa_nama(profil: pd.DataFrame) -> list[str]:
 
 # --------------------------------------------------------------------------
 def run(data_dir: Path | None = None) -> dict:
+    """Menjalankan bagian e-g dengan jumlah thread dikunci (N_THREAD) supaya hasil sama di mesin lain."""
+    with threadpool_limits(limits=N_THREAD):
+        return _run(data_dir)
+
+
+def _run(data_dir: Path | None = None) -> dict:
     mulai = time.perf_counter()
     data_dir = Path(data_dir) if data_dir else ROOT / "data"
     HASIL.mkdir(parents=True, exist_ok=True)
@@ -245,16 +308,18 @@ def run(data_dir: Path | None = None) -> dict:
 
     # ---- e1. Grid k x representasi ----
     print("\n=== e. STABILITAS: grid k dan representasi (K-Means, 20 subsampel 80% dari pool 20.000) ===")
-    grid = stabilitas_grid(rep)
+    grid, matriks = stabilitas_grid(rep)
     grid.to_csv(HASIL / "stabilitas_per_k.csv", index=False)
     pilihan = {nama: pilih_k(g.reset_index(drop=True)) for nama, g in grid.groupby("representasi", sort=False)}
-    # Blok kategori dimasukkan hanya bila menaikkan stabilitas pada k terpilih lebih dari 2 galat baku
-    # (panduan: fitur yang menurunkan stabilitas atau hanya menambah noise dikeluarkan).
+    # Blok kategori dimasukkan hanya bila menaikkan stabilitas pada k terpilih lebih dari 2 galat baku.
+    # Galat baku selisih dihitung dengan jackknife leave-one-run-out berpasangan (pasangan ARI saling berbagi run,
+    # dan run ke-r memakai subsampel yang sama di kedua representasi). Panduan: fitur yang menurunkan stabilitas
+    # atau hanya menambah noise dikeluarkan.
     k = pilihan["utama"]
     g_u = grid[(grid.representasi == "utama") & (grid.k == k)].iloc[0]
     g_k = grid[(grid.representasi == "utama+kategori") & (grid.k == k)].iloc[0]
-    galat = np.sqrt((g_u.ari_sb ** 2 + g_k.ari_sb ** 2) / N_RUN_GRID)
-    pakai_kategori = bool(g_k.ari_rata2 - g_u.ari_rata2 > 2 * galat)
+    selisih, galat = jackknife_selisih(matriks[("utama+kategori", k)], matriks[("utama", k)])
+    pakai_kategori = bool(selisih >= AMBANG_PRAKTIS_KATEGORI and selisih > 2 * galat)
     nama_rep = "utama+kategori" if pakai_kategori else "utama"
     if pakai_kategori:
         k = pilihan["utama+kategori"]
@@ -263,14 +328,16 @@ def run(data_dir: Path | None = None) -> dict:
     lab_k = _kmeans(rep["utama+kategori"], k, SEED).predict(rep["utama+kategori"])
     ari_rep = adjusted_rand_score(lab_u, lab_k)
     keputusan_kat = pd.DataFrame([{"k": k, "ari_tanpa_kategori": g_u.ari_rata2, "ari_dengan_kategori": g_k.ari_rata2,
+                                   "selisih_dengan_minus_tanpa": selisih, "galat_baku_jackknife": galat,
                                    "silhouette_tanpa": g_u.silhouette, "silhouette_dengan": g_k.silhouette,
                                    "ari_partisi_tanpa_vs_dengan": ari_rep, "pakai_kategori": pakai_kategori}])
     keputusan_kat.to_csv(HASIL / "keputusan_kategori.csv", index=False)
     with pd.option_context("display.width", 200):
         print(grid.to_string(index=False, float_format=lambda v: f"{v:.3f}"))
     print(f"k terpilih per representasi: {pilihan}; representasi final: {nama_rep}, k = {k}")
-    print(f"Kategori: ARI {g_u.ari_rata2:.3f} (tanpa) vs {g_k.ari_rata2:.3f} (dengan); partisi tanpa vs dengan "
-          f"kategori ARI {ari_rep:.3f} -> {'dipakai' if pakai_kategori else 'tidak dipakai (tidak menambah stabilitas)'}")
+    print(f"Kategori: ARI {g_u.ari_rata2:.4f} (tanpa) vs {g_k.ari_rata2:.4f} (dengan); selisih {selisih:+.5f}, "
+          f"galat baku jackknife {galat:.5f}; partisi tanpa vs dengan kategori ARI {ari_rep:.3f} -> "
+          f"{'dipakai' if pakai_kategori else f'tidak dipakai (perlu naik >= {AMBANG_PRAKTIS_KATEGORI} dan > 2 galat baku)'}")
 
     # ---- e2. Stabilitas per metode pada k terpilih ----
     print(f"\n=== e. STABILITAS PER METODE (k = {k}, {N_RUN_METODE} subsampel 80% dari semua pelanggan aktif) ===")
@@ -339,7 +406,7 @@ def run(data_dir: Path | None = None) -> dict:
     plt.close(fig)
 
     meta = {"seed": SEED, "representasi": nama_rep, "blok": list(t3.BLOCKS_TERPILIH) + (["komposisi_kategori"] if pakai_kategori else []),
-            "metode": "KMeans (n_init=10)", "k_aktif": k, "persentil_anomali": PERSENTIL_ANOMALI,
+            "metode": "KMeans (n_init=10)", "n_thread": N_THREAD, "k_aktif": k, "persentil_anomali": PERSENTIL_ANOMALI,
             "ukuran_segmen": {str(c): int(n) for c, n in pd.Series(cluster).value_counts().sort_index().items()},
             "ari_vs_cluster_sementara_ad": ari_vs_sementara,
             "durasi_menit": round((time.perf_counter() - mulai) / 60, 1)}

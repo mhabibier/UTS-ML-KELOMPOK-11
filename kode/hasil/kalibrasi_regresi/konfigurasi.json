@@ -1,0 +1,33 @@
+{
+  "python": "3.13.0",
+  "versi": {
+    "numpy": "2.5.4",
+    "pandas": "3.1.1",
+    "lightgbm": "4.7.0",
+    "scikit-learn": "1.9.1"
+  },
+  "parameter": {
+    "n_estimators": 200,
+    "learning_rate": 0.05,
+    "reg_lambda": 1.0,
+    "objective": "quantile",
+    "random_state": 42,
+    "n_jobs": 4,
+    "deterministic": true,
+    "force_col_wise": true,
+    "verbosity": -1,
+    "num_leaves": 31,
+    "min_child_samples": 100
+  },
+  "koreksi_p90_jam": 4.592367200252866,
+  "urutan_koreksi": 28153,
+  "q": 0.9,
+  "aturan": "Skor y-P90 pada Juli matang. k=ceil((n+1)*0.9). P90=max(P90+skor_urut_k,P50).",
+  "fit": "Sebelum Juli, hanya label diperkirakan tersedia pada 1 Juli.",
+  "kalibrasi": "Pickup Juli dan tiba sebelum 1 Agustus.",
+  "evaluasi": "Seluruh pickup Agustus dengan label yang diberikan dosen; tidak menyaring berdasarkan waktu tiba.",
+  "p50": "Tidak dikalibrasi; dilaporkan apa adanya.",
+  "refit_setelah_kalibrasi": false,
+  "batasan": "Koreksi bergaya split conformal satu sisi. Pergeseran waktu dan seleksi label yang sudah tiba membuat asumsi exchangeability tidak terjamin; tidak menjamin coverage 90%. Agustus telah dilihat saat audit/baseline; evaluasi historis, bukan holdout belum pernah dilihat. Pemilihan hyperparameter sebelumnya menggunakan label Mei-Juni yang diberikan, termasuk label yang mungkin belum tersedia pada cutoff Juli; bukan backtest operasional sepenuhnya. Skor Juli diagnostik saja. Jangan memilih ulang koreksi berdasarkan Agustus. Koreksi ini milik model yang dilatih sampai sebelum Juli; tidak otomatis sah untuk model refit baru.",
+  "referensi": "https://arxiv.org/abs/2107.07511"
+}

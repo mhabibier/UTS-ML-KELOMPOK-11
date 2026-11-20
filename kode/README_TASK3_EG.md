@@ -4,11 +4,13 @@ Lanjutan bagian a-d (`task3_clustering.py`, lihat `README_TASK3.md`). Preprocess
 fungsi `siapkan`: pelanggan tanpa transaksi (6.736) menjadi segmen 0, clustering hanya pada 113.264 pelanggan aktif.
 
 ```bash
-python kode/task3_lanjutan.py                  # ±6,5 menit; menulis kode/hasil/task3_eg/ dan cluster.csv
+python kode/run_all.py --task 3                # alur final: a-d lalu e-g (±15-25 menit)
+python kode/task3_lanjutan.py                  # e-g saja; menulis kode/hasil/task3_eg/ dan cluster.csv final
 python -m pytest kode/tests/test_task3_lanjutan.py -q
 ```
 
-`SEED = 42` (dari `task3_clustering.py`). Data: `data/clustering.csv.gz`.
+`SEED = 42` (dari `task3_clustering.py`). Data: `data/clustering.csv.gz`. Jumlah thread dikunci 4 (`N_THREAD`,
+sama dengan bagian a-d) supaya hasil K-Means sama di mesin lain: dengan 4 thread, angka di mesin kedua anggota identik.
 
 ## e. Stabilitas
 
@@ -19,10 +21,10 @@ Setiap ulangan: ambil subsampel 80%, latih ulang, prediksi **seluruh** pelanggan
 
 | k | silhouette | Davies-Bouldin | Calinski-Harabasz | ARI (rata-rata ± sb) |
 | --- | --- | --- | --- | --- |
-| **2** | **0,145** | **2,243** | **3.677** | **0,989 ± 0,004** |
+| **2** | **0,145** | **2,243** | **3.677** | **0,989 ± 0,003** |
 | 3 | 0,120 | 2,372 | 2.588 | 0,980 ± 0,005 |
-| 4 | 0,094 | 2,683 | 2.205 | 0,958 ± 0,014 |
-| 5 | 0,090 | 2,560 | 1.913 | 0,740 ± 0,175 |
+| 4 | 0,094 | 2,683 | 2.205 | 0,958 ± 0,015 |
+| 5 | 0,090 | 2,560 | 1.913 | 0,740 ± 0,174 |
 | 6 | 0,089 | 2,376 | 1.737 | 0,937 ± 0,012 |
 
 Aturan pemilihan (`pilih_k`, ditetapkan sebelum hasil final): hanya k yang stabil; silhouette, Davies-Bouldin, dan
@@ -30,18 +32,27 @@ Calinski-Harabasz masing-masing memberi satu suara; suara terbanyak menang (seri
 Ketiga kriteria sepakat pada **k = 2** untuk pelanggan aktif.
 
 **Komposisi kategori** (keputusan yang ditunda dari bagian a-d; `keputusan_kategori.csv`): pada k = 2 stabilitas
-0,989 (tanpa) vs 0,990 (dengan), dan kedua partisi hampir sama (ARI 0,959). Blok ini hanya dipakai bila menaikkan
-stabilitas lebih dari 2 galat baku, jadi **tidak dipakai** untuk clustering. Kategori tetap dipakai di profil (bagian f).
+0,9894 (tanpa) vs 0,9904 (dengan): selisih 0,00098, galat baku 0,00056, dan kedua partisi hampir sama (ARI 0,959).
+Aturan: blok dipakai hanya bila stabilitas naik **minimal 0,01 ARI** (bermakna secara praktis) **dan** lebih dari
+2 galat baku. Galat baku selisih dihitung dengan jackknife *leave-one-run-out* berpasangan, karena pasangan ARI saling
+berbagi run dan run ke-r memakai subsampel yang sama di kedua representasi. Hasil: **tidak dipakai** untuk clustering;
+kategori tetap dipakai di profil (bagian f).
 
-**Per metode pada k = 2** (30 subsampel 80% dari semua pelanggan aktif; HDBSCAN 20 ulangan pada 6.000 pelanggan lalu
-disebar dengan KNN; `stabilitas_metode.csv`):
+Catatan jujur: ambang praktis 0,01 ditambahkan setelah review PR #11. Dengan aturan "2 galat baku" saja, selisih
+sekecil ini (keduanya ±0,99) membuat keputusan berbalik tergantung jumlah thread komputer (12 thread: selisih 0,0017,
+galat baku 0,00067 -> dipakai; 4 thread: 0,00098 vs 0,00056 -> tidak dipakai).
 
-| Metode | ARI rata-rata ± sb | ARI minimum | Catatan |
-| --- | --- | --- | --- |
-| **K-Means** | **0,993 ± 0,003** | 0,982 | dipakai untuk model final |
-| Gaussian Mixture (diagonal) | 0,985 ± 0,008 | 0,961 | |
-| MiniBatch K-Means | 0,850 ± 0,234 | 0,000 | sesekali hasilnya berbeda total |
-| HDBSCAN | 0,314 ± 0,453 | 0,000 | ±60% titik dianggap noise; tidak cocok untuk data ini |
+**Per metode pada k = 2** (30 subsampel 80% dari semua pelanggan aktif; `stabilitas_metode.csv`). HDBSCAN tidak
+sanggup 90 ribu baris dan tidak punya `predict`, jadi dilatih pada 6.000 pelanggan lalu pelanggan lain diberi label
+15 tetangga terdekat di antara titik non-noise (**HDBSCAN + KNN**). Run yang gagal membentuk minimal 2 cluster dicatat
+terpisah dan tidak dihitung sebagai partisi; ARI dihitung dari run valid saja.
+
+| Metode | Run valid | ARI rata-rata ± sb | ARI minimum | Catatan |
+| --- | --- | --- | --- | --- |
+| **K-Means** | 30/30 | **0,993 ± 0,003** | 0,982 | dipakai untuk model final |
+| Gaussian Mixture (diagonal) | 30/30 | 0,985 ± 0,008 | 0,961 | |
+| MiniBatch K-Means | 30/30 | 0,850 ± 0,234 | 0,000 | sesekali hasilnya berbeda total |
+| HDBSCAN + KNN | 12/20 (8 gagal) | 0,480 ± 0,469 | 0,000 | ±60% titik dianggap noise; tidak cocok untuk data ini |
 
 Ketidakstabilan yang terlihat pada bagian a-d (MiniBatch K-Means) berasal dari algoritmanya, bukan dari datanya.
 
@@ -77,5 +88,6 @@ label anomali).
 - Grid k memakai pool 20.000 pelanggan (alasan waktu); perbandingan metode memakai subsampel 80% dari semua pelanggan aktif.
 - Silhouette rendah (0,145): batas antarsegmen tidak tegas, segmen lebih mirip kontinuum belanja tinggi vs promo.
 - Data tanpa label; ARI di sini mengukur kestabilan, bukan kecocokan dengan segmen referensi.
-- K-Means memakai banyak thread, sehingga run ulang bisa berbeda sangat kecil (< 0,001) pada beberapa baris
-  `stabilitas_per_k.csv` untuk k > 2. Baris k = 2, keputusan, dan `cluster.csv` identik antar-run.
+- Hasil K-Means bergantung (sangat sedikit) pada jumlah thread; karena itu thread dikunci 4. Pada mesin dengan
+  kurang dari 4 core, angka bisa bergeser di digit ketiga atau keempat.
+- Stabilitas HDBSCAN + KNN mencakup efek penyebaran KNN, bukan HDBSCAN murni.
