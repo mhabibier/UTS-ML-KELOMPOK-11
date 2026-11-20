@@ -314,12 +314,14 @@ def run(data_dir: Path | None = None) -> dict:
         raise SystemExit("Nama segmen tidak sesuai data, tinjau NAMA_AKSI: " + "; ".join(masalah))
 
     jawaban = pd.DataFrame({"id_pelanggan": data["id_pelanggan"], "cluster": cluster})
-    ari_vs_sementara = None
-    if (ROOT / "cluster.csv").exists():   # cluster.csv sementara dari bagian a-d (sebelum ditimpa)
-        lama = pd.read_csv(ROOT / "cluster.csv").set_index("id_pelanggan").reindex(data["id_pelanggan"])["cluster"]
-        if lama.notna().all():
-            ari_vs_sementara = float(adjusted_rand_score(lama.to_numpy(), cluster))
-            print(f"\nARI cluster.csv final vs cluster.csv sementara a-d: {ari_vs_sementara:.3f}")
+    # Pembanding: kandidat sementara bagian a-d (MiniBatch K-Means k=2 pada sampel 6.000), dihitung ulang dari kode
+    # a-d, bukan dibaca dari cluster.csv (berkas itu ditimpa di bawah, jadi run ulang akan membandingkan dengan dirinya).
+    rng = np.random.default_rng(SEED)
+    idx_ad = np.sort(rng.choice(len(active), t3.N_FIT, replace=False))
+    sementara = np.zeros(len(data), dtype=int)
+    sementara[active.index.to_numpy()] = t3._kmeans(x[idx_ad], 2).predict(x).astype(int) + 1
+    ari_vs_sementara = float(adjusted_rand_score(sementara, cluster))
+    print(f"\nARI cluster.csv final vs kandidat sementara a-d (dihitung ulang): {ari_vs_sementara:.3f}")
     jawaban.to_csv(ROOT / "cluster.csv", index=False)
 
     # Grafik: stabilitas dan silhouette per k

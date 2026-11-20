@@ -77,3 +77,5 @@ label anomali).
 - Grid k memakai pool 20.000 pelanggan (alasan waktu); perbandingan metode memakai subsampel 80% dari semua pelanggan aktif.
 - Silhouette rendah (0,145): batas antarsegmen tidak tegas, segmen lebih mirip kontinuum belanja tinggi vs promo.
 - Data tanpa label; ARI di sini mengukur kestabilan, bukan kecocokan dengan segmen referensi.
+- K-Means memakai banyak thread, sehingga run ulang bisa berbeda sangat kecil (< 0,001) pada beberapa baris
+  `stabilitas_per_k.csv` untuk k > 2. Baris k = 2, keputusan, dan `cluster.csv` identik antar-run.
