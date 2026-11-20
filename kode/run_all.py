@@ -17,7 +17,7 @@ def main():
     parser.add_argument('--data-dir', type=Path, default=repo / 'data')
     args = parser.parse_args()
     if args.task == 'all':
-        required = ['Task1_Regresi.ipynb', 'task2_klasifikasi.py', 'task3_clustering.py']
+        required = ['Task1_Regresi.ipynb', 'task2_klasifikasi.py', 'task3_clustering.py', 'task3_lanjutan.py']
         missing = [p for p in required if not (repo/'kode'/p).is_file()]
         if missing:
             parser.error(f'Gabungkan PR terkait dahulu; kode belum tersedia: {missing}')
@@ -27,11 +27,20 @@ def main():
     if args.task in ('2', '3'):
         if args.mode != 'full':
             parser.error('--mode tests/report khusus Task 1.')
-        script = repo/'kode'/('task2_klasifikasi.py' if args.task=='2' else 'task3_clustering.py')
-        if not script.is_file():
-            parser.error(f'Gabungkan PR terkait dahulu: {script.name} belum tersedia.')
-        options = ['--berkas', str(args.data_dir.resolve()/'klasifikasi_train.csv.gz'), '--berkas-uji', str(args.data_dir.resolve()/'klasifikasi_test.csv.gz'), '--tahap', args.tahap] if args.task=='2' else ['--data-dir', str(args.data_dir.resolve())]
-        subprocess.run([sys.executable, str(script), *options], check=True)
+        if args.task == '2':
+            langkah = [('task2_klasifikasi.py', ['--berkas', str(args.data_dir.resolve()/'klasifikasi_train.csv.gz'),
+                                                  '--berkas-uji', str(args.data_dir.resolve()/'klasifikasi_test.csv.gz'),
+                                                  '--tahap', args.tahap])]
+        else:
+            # Task 3: a-d (preprocessing, metode, kandidat) lalu e-g (stabilitas, profil, anomali).
+            # task3_lanjutan.py dijalankan terakhir karena menimpa cluster.csv sementara dari a-d dengan versi final.
+            langkah = [('task3_clustering.py', ['--data-dir', str(args.data_dir.resolve())]),
+                       ('task3_lanjutan.py', ['--data-dir', str(args.data_dir.resolve())])]
+        for nama, options in langkah:
+            script = repo/'kode'/nama
+            if not script.is_file():
+                parser.error(f'Gabungkan PR terkait dahulu: {script.name} belum tersedia.')
+            subprocess.run([sys.executable, str(script), *options], check=True)
         return
     path = repo / 'kode/Task1_Regresi.ipynb'
     notebook = json.loads(path.read_text(encoding='utf-8'))

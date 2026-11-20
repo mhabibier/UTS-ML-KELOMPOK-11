@@ -42,13 +42,21 @@ Hasil revisi ada di `kode/hasil/task3_ad_revisi/`: tabel metode/k, ablation per
 kelompok, keputusan fitur, parameter preprocessing, grafik, dan metadata.
 Hasil eksperimen lama dihapus dari working tree; riwayatnya tetap tersedia di Git.
 
-## cluster.csv sementara
+## cluster.csv sementara dan alur final
 
-Skrip membuat `cluster.csv` di root dengan tepat satu baris per pelanggan.
-Segmen 0 = tanpa transaksi; segmen 1–2 = kandidat K-Means pada pelanggan aktif.
-Ini **sementara untuk integrasi**. Bagian e–g masih perlu uji stabilitas penuh,
-profil dan aksi pemasaran per segmen, serta aturan anomali `-1`. Ganti file ini
-sebelum pengumpulan final. ARI internal ablation bukan skor referensi dosen.
+Skrip a–d membuat `cluster.csv` **sementara** di root (segmen 0 = tanpa transaksi;
+segmen 1–2 = kandidat MiniBatch K-Means pada pelanggan aktif). Bagian e–g
+(`kode/task3_lanjutan.py`, lihat [README_TASK3_EG.md](README_TASK3_EG.md)) menetapkan
+representasi, metode, k, profil, dan anomali `-1`, lalu menimpa berkas itu dengan
+versi final. Alur final Task 3:
+
+```bash
+python kode/run_all.py --task 3     # a–d lalu e–g; cluster.csv akhir = versi final
+```
+
+Menjalankan `run_task3_ad.py` saja akan menimpa `cluster.csv` final dengan versi
+sementara; jalankan `python kode/task3_lanjutan.py` sesudahnya untuk mengembalikannya.
+Notebook menjalankan keduanya secara berurutan. ARI internal ablation bukan skor referensi dosen.
 
 Codex membantu audit, implementasi, eksperimen, tes dan dokumentasi. Muhammad
 Habibie Rabbani (101032300005) perlu meninjau hasil; kontribusi teman untuk e–g

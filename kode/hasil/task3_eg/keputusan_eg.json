@@ -1,0 +1,22 @@
+{
+  "seed": 42,
+  "representasi": "utama",
+  "blok": [
+    "perilaku",
+    "nilai_belanja",
+    "demografi",
+    "komposisi_waktu"
+  ],
+  "metode": "KMeans (n_init=10)",
+  "n_thread": 4,
+  "k_aktif": 2,
+  "persentil_anomali": 98,
+  "ukuran_segmen": {
+    "-1": 2266,
+    "0": 6736,
+    "1": 45701,
+    "2": 65297
+  },
+  "ari_vs_cluster_sementara_ad": 0.7270767111714976,
+  "durasi_menit": 13.6
+}
