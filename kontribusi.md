@@ -45,8 +45,9 @@ tidak otomatis dianggap persetujuan terhadap laporan dan kontribusi gabungan ini
       serta catatan kontribusi/penggunaan AI untuk dirinya. Bukti: konfirmasi
       langsung melalui chat Codex pada 20 November 2026, setelah PR #12 disiapkan
       (versi `543db9c`): "Saya setuju untuk bagian saya".
-- [ ] Azmi Aziz syah Putra: telah membaca, membenarkan kontribusi/penggunaan AI,
-      dan menyetujui isi laporan gabungan. Bukti persetujuan: belum dicatat.
+- [x] Azmi Aziz syah Putra: telah membaca, membenarkan kontribusi/penggunaan AI,
+      dan menyetujui isi laporan gabungan (versi `main` setelah PR #12, commit `7e85e8c`).
+      Bukti: [PR persetujuan yang dibuat Azmi](https://github.com/mhabibier/UTS-ML-KELOMPOK-11/pull/2).
 
 Isi tautan komentar/review persetujuan setelah benar-benar diberikan. Sebelum
 pengumpulan, kedua persetujuan harus tercatat, semua PR pengumpulan harus masuk
