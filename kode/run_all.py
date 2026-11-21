@@ -16,13 +16,24 @@ def main():
     parser.add_argument('--mode', choices=['full', 'tests', 'report'], default='full')
     parser.add_argument('--data-dir', type=Path, default=repo / 'data')
     args = parser.parse_args()
+    if args.task != '1' and args.mode != 'full':
+        parser.error('--mode tests/report khusus Task 1.')
+    if args.task == 'all' and args.tahap != 'semua':
+        parser.error('--task all mereproduksi laporan lengkap; gunakan --task 2 untuk satu tahap Task 2.')
     if args.task == 'all':
-        required = ['Task1_Regresi.ipynb', 'task2_klasifikasi.py', 'task3_clustering.py', 'task3_lanjutan.py']
+        required = ['Task1_Regresi.ipynb', 'task2_klasifikasi.py', 'task3_clustering.py', 'task3_lanjutan.py', 'cek_format.py', 'susun_laporan_kelompok.py']
         missing = [p for p in required if not (repo/'kode'/p).is_file()]
         if missing:
             parser.error(f'Gabungkan PR terkait dahulu; kode belum tersedia: {missing}')
         for task in ['1', '2', '3']:
             subprocess.run([sys.executable, __file__, '--task', task, '--data-dir', str(args.data_dir.resolve()), '--mode', args.mode, '--tahap', args.tahap], check=True)
+        # Pemeriksaan dan laporan mengikuti data-dir yang sama dengan eksperimen.
+        from cek_format import periksa_semua
+        code, lines = periksa_semua(repo, args.data_dir.resolve())
+        print('\n'.join(lines), flush=True)
+        if code:
+            raise SystemExit(code)
+        subprocess.run([sys.executable, str(repo/'kode/susun_laporan_kelompok.py')], check=True)
         return
     if args.task in ('2', '3'):
         if args.mode != 'full':

@@ -1,0 +1,30 @@
+{
+  "base_commit": "a7aa24992db31971133bc47f1fa4ed12686f2eab",
+  "tests": {
+    "pytest_kode_tests": 48,
+    "task1_notebook": 21,
+    "task3_ad": 4,
+    "total": 73
+  },
+  "format_csv": {
+    "regresi": 60000,
+    "klasifikasi": 106674,
+    "cluster": 120000
+  },
+  "task3_full_runner": {
+    "command": "python kode/run_all.py --task 3",
+    "exit_code": 0,
+    "isi_cluster_identik_dengan_base": true,
+    "sha256_cluster_normalisasi_LF": "3cf3c1483d3198ac2bb64912b378c78fd6ee84a28ba914753a78f4d1f24f3f33"
+  },
+  "laporan": {
+    "halaman": 14,
+    "text_bounds": "lolos"
+  },
+  "batasan": "Run all penuh lintas tiga task tidak diulang pada finalisasi ini. Task 2 final dan Task 1 telah direproduksi pada review sebelumnya; tes integrasi memeriksa urutan, propagasi kegagalan dan validasi sebelum laporan. Grid Task 3 dapat berbeda kecil antar-run; isi CSV final identik. Persetujuan laporan/kontribusi menunggu kedua anggota.",
+  "salinan_bersih": {
+    "sumber": "git archive fb56614",
+    "data": "dataset resmi disediakan terpisah",
+    "hasil": "Ketiga CSV dan manifest laporan lolos dari salinan file Git tanpa arsip lokal"
+  }
+}

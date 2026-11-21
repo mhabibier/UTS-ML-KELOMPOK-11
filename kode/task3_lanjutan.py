@@ -233,8 +233,10 @@ def ringkas_stabilitas(nama: str, runs: list, noise: np.ndarray | None = None) -
 # f. Profil dan aksi
 # --------------------------------------------------------------------------
 NAMA_AKSI = {
-    0: ("Belum Bertransaksi",
-        "Kirim kupon pembelian pertama (misalnya potongan Rp 20 ribu tanpa minimum) lewat notifikasi aplikasi."),
+    # 0 transaksi dalam 90 hari, tetapi median lama keanggotaan ±21 bulan: kemungkinan besar pelanggan lama yang
+    # berhenti, bukan pelanggan yang belum pernah membeli.
+    0: ("Tidak Aktif 90 Hari",
+        "Kampanye reaktivasi (misalnya voucher kembali berbelanja dengan masa berlaku singkat); cek riwayat lama dulu."),
     1: ("Pelanggan Premium Loyal",
         "Program VIP: gratis ongkir tanpa minimum dan akses awal produk baru, bukan diskon besar."),
     2: ("Pemburu Promo Malam",
@@ -351,7 +353,7 @@ def _run(data_dir: Path | None = None) -> dict:
     jarak = np.linalg.norm(xf - model.cluster_centers_[lab], axis=1)
     lab = urutkan_label(lab, active["belanja_90h"].to_numpy())
     anomali = tandai_anomali(jarak)
-    cluster = np.zeros(len(data), dtype=int)                 # 0 = belum bertransaksi
+    cluster = np.zeros(len(data), dtype=int)                 # 0 = tidak aktif 90 hari
     cluster[active.index.to_numpy()] = np.where(anomali, -1, lab)
     rk = (data.loc[active.index, "rasio_konversi"] > 1).to_numpy()
     gmm = GaussianMixture(n_components=k, covariance_type="diag", n_init=3, reg_covar=1e-5,
