@@ -1,0 +1,4 @@
+kelompok,transaksi,tingkat_fraud
+umur_merchant_hari < 0,955,0.2031413612565445
+"merchant yang sama, umur >= 0",9487,0.009170443765152313
+merchant lain,392635,0.005962280489513161

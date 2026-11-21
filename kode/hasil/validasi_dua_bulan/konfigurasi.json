@@ -1,0 +1,35 @@
+{
+  "parameter": {
+    "n_estimators": 200,
+    "learning_rate": 0.05,
+    "reg_lambda": 1.0,
+    "objective": "quantile",
+    "random_state": 42,
+    "n_jobs": 4,
+    "deterministic": true,
+    "force_col_wise": true,
+    "verbosity": -1,
+    "num_leaves": 31,
+    "min_child_samples": 100
+  },
+  "koreksi_p90_jam": -1.0735100435077385,
+  "urutan_koreksi": 26335,
+  "kategori_baru": {
+    "layanan": 0,
+    "mitra_kurir": 0,
+    "hub_asal": 0,
+    "kota_asal": 0,
+    "pulau_tujuan": 0,
+    "kota_tujuan": 0
+  },
+  "sha256_model": [
+    "f20d968b5b5f575d5c4be5469ccafa81c404327dba9c543f2be23261f240855e",
+    "9b21b9b7d743374df0a65c9ee04dc3a451912b4ca453e79232245aab4e09614a"
+  ],
+  "refit_selama_evaluasi": false,
+  "fit": "Pickup sebelum Juni; label tersedia sebelum 1 Juni.",
+  "kalibrasi": "Pickup Juni; label tersedia sebelum 1 Juli.",
+  "evaluasi": "Seluruh label pickup Juli-Agustus; model dan koreksi tetap selama dua bulan.",
+  "eksploratif": true,
+  "batasan": "Parameter sudah dipilih lewat eksperimen Mei-Juni dan periode Juli-Agustus pernah diperiksa. Ini diagnosis horizon dua bulan secara retrospektif, bukan evaluasi independen atau backtest operasional sepenuhnya. Tidak memilih ulang model, fitur, koreksi, atau prediksi final dari hasil ini. Asumsi waktu tiba dan seleksi label matang membatasi jaminan coverage."
+}

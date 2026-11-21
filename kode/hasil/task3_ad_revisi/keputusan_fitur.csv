@@ -1,0 +1,61 @@
+fitur,keputusan
+id_pelanggan,ID
+recency_hari,dipakai
+frekuensi_90h,dipakai
+belanja_90h,dipakai
+rata2_keranjang,dipakai
+item_per_pesanan,dipakai
+porsi_fashion,ablation; keputusan menunggu uji stabilitas e
+porsi_elektronik,ablation; keputusan menunggu uji stabilitas e
+porsi_kecantikan,ablation; keputusan menunggu uji stabilitas e
+porsi_rumah_tangga,ablation; keputusan menunggu uji stabilitas e
+porsi_makanan_minuman,ablation; keputusan menunggu uji stabilitas e
+porsi_ibu_bayi,ablation; keputusan menunggu uji stabilitas e
+porsi_olahraga,ablation; keputusan menunggu uji stabilitas e
+porsi_hobi,ablation; keputusan menunggu uji stabilitas e
+porsi_otomotif,ablation; keputusan menunggu uji stabilitas e
+porsi_kesehatan,ablation; keputusan menunggu uji stabilitas e
+porsi_buku_alat_tulis,ablation; keputusan menunggu uji stabilitas e
+porsi_voucher_digital,ablation; keputusan menunggu uji stabilitas e
+porsi_gadget_aksesoris,ablation; keputusan menunggu uji stabilitas e
+porsi_perabot,ablation; keputusan menunggu uji stabilitas e
+porsi_pertanian,ablation; keputusan menunggu uji stabilitas e
+porsi_lainnya,ablation; keputusan menunggu uji stabilitas e
+porsi_jam_pagi,dipakai
+porsi_jam_siang,dipakai
+porsi_jam_sore,dipakai
+porsi_jam_malam,dipakai
+persen_voucher,dipakai
+persen_flash_sale,dipakai
+persen_paylater,dipakai
+persen_cod,dipakai
+retur_90h,dipakai
+rating_beri_rata2,dipakai
+ulasan_90h,dipakai
+sesi_per_minggu,dipakai
+durasi_sesi_menit,dipakai
+rasio_konversi,dipakai
+lama_member_bulan,dipakai
+umur,dipakai
+kota_tier,dipakai
+perangkat,dipakai
+jumlah_alamat,dipakai
+wishlist,dipakai
+klik_iklan_30h,dipakai
+belanja_30h,redundan dengan belanja_90h
+frekuensi_30h,dipakai
+n01,CRM anonim (tidak dipakai)
+n02,CRM anonim (tidak dipakai)
+n03,CRM anonim (tidak dipakai)
+n04,CRM anonim (tidak dipakai)
+n05,CRM anonim (tidak dipakai)
+n06,CRM anonim (tidak dipakai)
+n07,CRM anonim (tidak dipakai)
+n08,CRM anonim (tidak dipakai)
+n09,CRM anonim (tidak dipakai)
+n10,CRM anonim (tidak dipakai)
+n11,CRM anonim (tidak dipakai)
+n12,CRM anonim (tidak dipakai)
+n13,CRM anonim (tidak dipakai)
+n14,CRM anonim (tidak dipakai)
+n15,CRM anonim (tidak dipakai)
