@@ -47,7 +47,7 @@ tidak otomatis dianggap persetujuan terhadap laporan dan kontribusi gabungan ini
       (versi `543db9c`): "Saya setuju untuk bagian saya".
 - [x] Azmi Aziz syah Putra: telah membaca, membenarkan kontribusi/penggunaan AI,
       dan menyetujui isi laporan gabungan (versi `main` setelah PR #12, commit `7e85e8c`).
-      Bukti: [komentar persetujuan di PR #12](TAUTAN_KOMENTAR).
+      Bukti: [PR persetujuan yang dibuat Azmi](https://github.com/mhabibier/UTS-ML-KELOMPOK-11/pull/2).
 
 Isi tautan komentar/review persetujuan setelah benar-benar diberikan. Sebelum
 pengumpulan, kedua persetujuan harus tercatat, semua PR pengumpulan harus masuk
