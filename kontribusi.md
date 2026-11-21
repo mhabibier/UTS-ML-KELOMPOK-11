@@ -20,10 +20,19 @@ tidak membatasi tanggung jawab ujian lisan: kedua anggota perlu memahami semua t
   hitungan manual/temporal, pemeriksaan ID dan format CSV, perbandingan hasil
   reproduksi, review kode, serta review silang Azmi. Laporan PDF disusun otomatis
   dari artefak eksperimen; manifest menyimpan sumber angka.
-- **Claude Code**, menurut keterangan PR Azmi: membantu implementasi dan eksperimen
-  Task 2 serta Task 3 e-g. Verifikasi yang dilaporkan mencakup unit test, run pada
-  data resmi, perbandingan keluaran antarrun, cek format, dan review silang Habibie.
-  Azmi perlu memastikan uraian ini lengkap saat menyetujui dokumen.
+- **Claude Code (Anthropic)**, pada pekerjaan Azmi (Task 2: PR #4, #5, #7-#10; Task 3
+  e-g: PR #11; `cek_format.py`; bagian Task 2/3 e-g pada laporan): membantu menganalisis
+  data dan audit kebocoran, merancang dan menulis kode (validasi berbasis waktu dengan
+  jeda, fitur riwayat tanpa kebocoran, perbandingan penanganan kelas tidak seimbang,
+  analisis pergeseran pola, kalibrasi dan aturan biaya, analisis error, model final;
+  stabilitas, profil, dan anomali Task 3), menulis unit test, menjalankan eksperimen,
+  serta menyusun README dan deskripsi PR. Verifikasi: unit test, termasuk uji mutasi
+  untuk tes anti-kebocoran (kebocoran yang sengaja disisipkan harus tertangkap); uji
+  analitis dan empiris untuk koreksi undersampling, kalibrasi Platt, dan ambang biaya;
+  run penuh pada data asli dengan beberapa seed; run ulang seluruh skrip Task 2 yang
+  menghasilkan tabel identik; cek format dan ID; serta review silang Habibie (menemukan
+  kasus transaksi serentak, klaim kebocoran yang terlalu pasti, dan perhitungan
+  stabilitas HDBSCAN serta galat baku).
 - Label test/referensi tersembunyi tidak digunakan; tidak ada dataset eksternal.
   Bantuan AI tidak dianggap bukti kebenaran dan tidak menggantikan pemahaman anggota.
 
