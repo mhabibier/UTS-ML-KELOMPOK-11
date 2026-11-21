@@ -10,7 +10,9 @@ python -m pytest kode/tests/test_task3_lanjutan.py -q
 ```
 
 `SEED = 42` (dari `task3_clustering.py`). Data: `data/clustering.csv.gz`. Jumlah thread dikunci 4 (`N_THREAD`,
-sama dengan bagian a-d) supaya hasil K-Means sama di mesin lain: dengan 4 thread, angka di mesin kedua anggota identik.
+sama dengan bagian a-d) supaya hasil K-Means sedekat mungkin di mesin lain. Angka stabilitas tetap bisa berbeda di
+digit ketiga atau keempat antarmesin (versi Python/NumPy/BLAS); keputusan dan `cluster.csv` sama di kedua mesin anggota.
+Tabel di `kode/hasil/task3_eg/` berasal dari run terakhir yang di-commit.
 
 ## e. Stabilitas
 
@@ -32,7 +34,8 @@ Calinski-Harabasz masing-masing memberi satu suara; suara terbanyak menang (seri
 Ketiga kriteria sepakat pada **k = 2** untuk pelanggan aktif.
 
 **Komposisi kategori** (keputusan yang ditunda dari bagian a-d; `keputusan_kategori.csv`): pada k = 2 stabilitas
-0,9894 (tanpa) vs 0,9904 (dengan): selisih 0,00098, galat baku 0,00056, dan kedua partisi hampir sama (ARI 0,959).
+0,9894 (tanpa) vs 0,9904 (dengan): selisih 0,00104, galat baku 0,00055 (run yang di-commit; di mesin lain 0,00098 dan
+0,00056), dan kedua partisi hampir sama (ARI 0,959).
 Aturan: blok dipakai hanya bila stabilitas naik **minimal 0,01 ARI** (bermakna secara praktis) **dan** lebih dari
 2 galat baku. Galat baku selisih dihitung dengan jackknife *leave-one-run-out* berpasangan, karena pasangan ARI saling
 berbagi run dan run ke-r memakai subsampel yang sama di kedua representasi. Hasil: **tidak dipakai** untuk clustering;
@@ -40,7 +43,7 @@ kategori tetap dipakai di profil (bagian f).
 
 Catatan jujur: ambang praktis 0,01 ditambahkan setelah review PR #11. Dengan aturan "2 galat baku" saja, selisih
 sekecil ini (keduanya ±0,99) membuat keputusan berbalik tergantung jumlah thread komputer (12 thread: selisih 0,0017,
-galat baku 0,00067 -> dipakai; 4 thread: 0,00098 vs 0,00056 -> tidak dipakai).
+galat baku 0,00067 -> dipakai; 4 thread: ±0,001 vs ±0,00055 -> tidak dipakai).
 
 **Per metode pada k = 2** (30 subsampel 80% dari semua pelanggan aktif; `stabilitas_metode.csv`). HDBSCAN tidak
 sanggup 90 ribu baris dan tidak punya `predict`, jadi dilatih pada 6.000 pelanggan lalu pelanggan lain diberi label
@@ -62,7 +65,7 @@ Ketidakstabilan yang terlihat pada bagian a-d (MiniBatch K-Means) berasal dari a
 | --- | --- | --- | --- | --- |
 | 1 | Pelanggan Premium Loyal | 45.701 (38,1%) | belanja 90 hari Rp 3,94 jt, keranjang Rp 350 rb, 12 transaksi, voucher 31%, belanja pagi, umur 37; kategori khas elektronik, makanan-minuman, ibu-bayi | Program VIP: gratis ongkir tanpa minimum dan akses awal produk baru, bukan diskon besar |
 | 2 | Pemburu Promo Malam | 65.297 (54,4%) | belanja Rp 604 rb, keranjang Rp 126 rb, 5 transaksi, voucher 67%, flash sale 52%, porsi belanja malam 35%, umur 29; kategori khas fashion, voucher digital, kecantikan | Flash sale dan voucher terbatas pukul 20.00-23.00 lewat push notification |
-| 0 | Belum Bertransaksi | 6.736 (5,6%) | 0 transaksi dalam 90 hari, recency 38 hari, sesi 2,6 per minggu | Kupon pembelian pertama (misalnya potongan Rp 20 ribu tanpa minimum) |
+| 0 | Tidak Aktif 90 Hari | 6.736 (5,6%) | 0 transaksi dalam 90 hari, recency 38 hari, sesi 2,6 per minggu, lama keanggotaan ±21 bulan (kemungkinan pelanggan lama yang berhenti, bukan yang belum pernah membeli) | Kampanye reaktivasi (voucher kembali berbelanja dengan masa berlaku singkat); cek riwayat lama dulu |
 | -1 | Anomali (perlu ditinjau) | 2.266 (1,9%) | jarak terjauh ke centroid | Tidak diikutkan kampanye massal; tinjau kualitas data |
 
 Skrip memeriksa bahwa nama sesuai data (misalnya segmen 1 harus berbelanja terbesar) dan berhenti bila tidak.
@@ -77,7 +80,7 @@ tergolong anomali jarak; sisanya tetap diberi segmen biasa karena perilakunya ti
 
 ## cluster.csv final
 
-`id_pelanggan,cluster` untuk 120.000 pelanggan: 1 = Premium Loyal, 2 = Pemburu Promo Malam, 0 = Belum Bertransaksi,
+`id_pelanggan,cluster` untuk 120.000 pelanggan: 1 = Premium Loyal, 2 = Pemburu Promo Malam, 0 = Tidak Aktif 90 Hari,
 -1 = anomali. ARI terhadap `cluster.csv` sementara bagian a-d = 0,727 (perbedaan dari K-Means penuh vs MiniBatch dan
 label anomali).
 
